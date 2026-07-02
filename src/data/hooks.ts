@@ -1,0 +1,42 @@
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db, type SettingsRow } from './db';
+import { DEFAULT_CONFIG, DEFAULT_GOAL_SCORE, cloneConfig } from '../engine/config';
+import { aggregate, globalMedianMs } from '../analytics/aggregate';
+import { rankWeaknesses } from '../analytics/weakness';
+
+const DEFAULT_SETTINGS: SettingsRow = {
+  id: 'local',
+  config: cloneConfig(DEFAULT_CONFIG),
+  goalScore: DEFAULT_GOAL_SCORE,
+  updatedAt: 0,
+  synced: 0,
+};
+
+// Read-only: never write inside a liveQuery observation context. The stored
+// row is seeded once at startup (see ensureSettings); until then we fall back
+// to defaults in-memory.
+export function useSettings(): SettingsRow {
+  const row = useLiveQuery(() => db.settings.get('local'), []);
+  return row ?? DEFAULT_SETTINGS;
+}
+
+export function useSessions() {
+  return useLiveQuery(() => db.sessions.orderBy('startedAt').reverse().toArray(), []);
+}
+
+export function useBestScore() {
+  return useLiveQuery(async () => {
+    const sessions = await db.sessions.toArray();
+    return sessions.reduce((best, s) => Math.max(best, s.score), 0);
+  }, []);
+}
+
+/** Aggregated weakness ranking across all recorded attempts. */
+export function useWeaknesses(limit = 5) {
+  return useLiveQuery(async () => {
+    const attempts = await db.attempts.toArray();
+    const stats = aggregate(attempts);
+    const g = globalMedianMs(attempts);
+    return { ranked: rankWeaknesses(stats, g, limit), stats, globalMedianMs: g, total: attempts.length };
+  }, [limit]);
+}
