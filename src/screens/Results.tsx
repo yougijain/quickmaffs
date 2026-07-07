@@ -7,6 +7,8 @@ import { Button, Card, Stat } from '../components/ui';
 import { OP_LABEL, type Operation } from '../engine/types';
 import { median } from '../analytics/aggregate';
 import { formatMs } from '../lib/format';
+import { DistributionChart } from '../components/charts';
+import { ordinal, percentileFor } from '../benchmark/distribution';
 
 export default function Results() {
   const navigate = useNavigate();
@@ -58,6 +60,19 @@ export default function Results() {
         <div className="mb-3 text-xs uppercase tracking-wide text-slate-400">Benchmark ladder</div>
         <TierLadder score={score} />
       </Card>
+
+      {mode === 'classic' && config.durationSec === 120 && score > 0 && (
+        <Card>
+          <div className="mb-1 flex items-baseline gap-2">
+            <span className="text-xs uppercase tracking-wide text-slate-400">Where you stand</span>
+          </div>
+          <div className="mb-1 flex items-baseline gap-2">
+            <span className="text-2xl font-black tabular-nums text-emerald-400">{ordinal(percentileFor(score))}</span>
+            <span className="text-sm text-slate-400">percentile · beat ~{Math.round(percentileFor(score))}% of the field</span>
+          </div>
+          <DistributionChart score={score} />
+        </Card>
+      )}
 
       <Card>
         <div className="grid grid-cols-3 gap-3">

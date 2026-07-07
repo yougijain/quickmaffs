@@ -5,6 +5,9 @@ import { buildFocusDrill } from '../analytics/drills';
 import { Button, Card } from '../components/ui';
 import { formatDate, formatMs, pct } from '../lib/format';
 import { MIN_SAMPLES } from '../analytics/weakness';
+import { DistributionChart, ScoreHistoryChart } from '../components/charts';
+import { ordinal, percentileFor } from '../benchmark/distribution';
+import { tierFor } from '../benchmark/tiers';
 
 export default function Analytics() {
   const navigate = useNavigate();
@@ -12,6 +15,14 @@ export default function Analytics() {
   const sessions = useSessions();
   const settings = useSettings();
   const start = useGameStore((s) => s.start);
+
+  // Only standard 120s classic runs are apples-to-apples with the population
+  // benchmark, so progress + percentile use those.
+  const classicRuns = (sessions ?? [])
+    .filter((s) => s.mode === 'classic' && s.durationSec === 120)
+    .sort((a, b) => a.startedAt - b.startedAt);
+  const bestClassic = classicRuns.reduce((m, s) => Math.max(m, s.score), 0);
+  const goal = settings?.goalScore ?? 40;
 
   const drillBucket = (bucket: string) => {
     if (!settings) return;
@@ -25,6 +36,45 @@ export default function Analytics() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-black tracking-tight">Your stats</h1>
+
+      <Card>
+        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-400">Your progress</h2>
+        {classicRuns.length === 0 ? (
+          <p className="text-sm text-slate-400">
+            Play a <span className="text-slate-200">120s classic drill</span> to start plotting your scores over
+            time.
+          </p>
+        ) : (
+          <>
+            <ScoreHistoryChart data={classicRuns.map((s) => ({ t: s.startedAt, score: s.score }))} goal={goal} />
+            <p className="mt-1 text-xs text-slate-500">
+              {classicRuns.length} classic run{classicRuns.length === 1 ? '' : 's'} · best{' '}
+              <span className="text-amber-300">{bestClassic}</span> · {tierFor(bestClassic).label}
+            </p>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-400">Where you stand</h2>
+        {bestClassic <= 0 ? (
+          <p className="text-sm text-slate-400">
+            Your best 120s score will be plotted against the population curve here.
+          </p>
+        ) : (
+          <>
+            <div className="mb-1 flex items-baseline gap-2">
+              <span className="text-3xl font-black tabular-nums text-emerald-400">{ordinal(percentileFor(bestClassic))}</span>
+              <span className="text-sm text-slate-400">percentile — you beat ~{Math.round(percentileFor(bestClassic))}% of the field</span>
+            </div>
+            <DistributionChart score={bestClassic} />
+            <p className="mt-1 text-xs text-slate-500">
+              Modeled curve (normal, μ45/σ15) calibrated to community &amp; quant-interview benchmarks — there’s no
+              official Zetamac dataset. Uses your best 120s classic score.
+            </p>
+          </>
+        )}
+      </Card>
 
       <Card>
         <div className="mb-3 flex items-center justify-between">
