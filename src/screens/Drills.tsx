@@ -1,24 +1,29 @@
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../game/useGameStore';
-import { useSettings, useWeaknesses } from '../data/hooks';
-import { buildWeaknessMix } from '../analytics/drills';
+import { useAdaptivePlan, useSettings } from '../data/hooks';
+import { makeAdaptiveSelector } from '../analytics/adaptive';
+import { buildFocusDrill } from '../analytics/drills';
 import { cloneConfig } from '../engine/config';
 import { Button, Card } from '../components/ui';
 import { OP_LABEL, type Operation } from '../engine/types';
-import { MIN_SAMPLES } from '../analytics/weakness';
+import { pct } from '../lib/format';
 
 export default function Drills() {
   const navigate = useNavigate();
   const settings = useSettings();
-  const data = useWeaknesses(6);
+  const plan = useAdaptivePlan();
   const start = useGameStore((s) => s.start);
 
-  const canMix = data && data.ranked.length > 0;
+  const startAdaptive = () => {
+    if (!settings || !plan) return;
+    start(settings.config, { mode: 'adaptive', selector: makeAdaptiveSelector(plan) });
+    navigate('/game');
+  };
 
-  const startMix = () => {
-    if (!settings || !data) return;
-    const plan = buildWeaknessMix(settings.config, data.ranked);
-    start(plan.config, { mode: 'drill', weights: plan.weights, focus: plan.focus });
+  const startFocus = (bucket: string, label: string) => {
+    if (!settings) return;
+    const focusPlan = buildFocusDrill(settings.config, bucket, 120);
+    start(focusPlan.config, { mode: 'drill', focus: [label] });
     navigate('/game');
   };
 
@@ -30,34 +35,63 @@ export default function Drills() {
     navigate('/game');
   };
 
+  const targets = plan?.targets ?? [];
+  const hasSignal = targets.length > 0;
+
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-[26px] font-bold tracking-tight">Targeted drills</h1>
 
       <Card>
-        <h2 className="font-semibold">Weakness mix</h2>
+        <h2 className="font-semibold">Adaptive session</h2>
         <p className="mt-1 text-sm text-muted">
-          Oversamples the areas you’re slowest or most error-prone in, based on your history.
+          Weights problems toward where you’re slow or error-prone, stays varied, and rebalances as you improve.
         </p>
-        {canMix ? (
-          <>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {data!.ranked.slice(0, 4).map((r) => (
-                <span key={r.stat.bucket} className="rounded-full bg-ink-800 px-2.5 py-1 text-xs text-gold">
-                  {r.stat.label}
+        {hasSignal ? (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {targets.slice(0, 4).map((t) => (
+              <span
+                key={t.bucket}
+                className="rounded-full border border-line bg-ink-800/70 px-2.5 py-1 text-xs text-muted"
+              >
+                {t.label}
+                <span className="text-faint">
+                  {' '}
+                  · {t.errorRate > 0.05 ? pct(t.errorRate) + ' err' : `${t.rel.toFixed(1)}×`}
                 </span>
-              ))}
-            </div>
-            <Button className="mt-4 w-full" onClick={startMix}>
-              Start weakness mix
-            </Button>
-          </>
+              </span>
+            ))}
+          </div>
         ) : (
           <p className="mt-3 text-sm text-faint">
-            Play at least {MIN_SAMPLES}+ problems per area first — then a personalized mix unlocks.
+            No weak spots detected yet — sessions stay fully mixed until enough data accumulates.
           </p>
         )}
+        <Button className="mt-4 w-full" onClick={startAdaptive} disabled={!plan}>
+          Start training
+        </Button>
       </Card>
+
+      {hasSignal && (
+        <Card>
+          <h2 className="font-semibold">Focus one weak spot</h2>
+          <p className="mt-1 text-sm text-muted">120 seconds of nothing but a single problem type.</p>
+          <div className="mt-3 flex flex-col gap-2">
+            {targets.slice(0, 3).map((t) => (
+              <div key={t.bucket} className="flex items-center justify-between gap-3">
+                <span className="truncate text-sm text-fg">{t.label}</span>
+                <Button
+                  variant="secondary"
+                  className="min-h-0 shrink-0 px-3 py-1.5 text-sm"
+                  onClick={() => startFocus(t.bucket, t.label)}
+                >
+                  Drill
+                </Button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Card>
         <h2 className="font-semibold">Single operation</h2>

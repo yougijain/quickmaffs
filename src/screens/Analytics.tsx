@@ -88,7 +88,7 @@ export default function Analytics() {
             here with one-tap focus practice.
           </p>
         ) : data.ranked.length === 0 ? (
-          <p className="text-sm text-brand">No clear weak spots — your speed is even across the board. 💪</p>
+          <p className="text-sm text-brand">No clear weak spots — your speed is even across the board.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {data.ranked.map((r) => (

@@ -1,30 +1,13 @@
 import { cloneConfig } from '../engine/config';
-import type { OpWeights } from '../engine/generate';
 import type { GameConfig, Operation } from '../engine/types';
 import { BAND_RANGE, opOfBucket, type Band } from '../engine/buckets';
-import type { WeaknessRank } from './weakness';
+
+// The old op-level "weakness mix" was superseded by the bucket-level adaptive
+// engine in adaptive.ts.
 
 export interface DrillPlan {
   config: GameConfig;
-  weights?: OpWeights;
   focus: string[]; // human-readable labels of what's being targeted
-}
-
-/**
- * "Weakness mix": oversample the operations that contain the user's weak
- * buckets. Every enabled op keeps a small floor so the drill stays varied.
- */
-export function buildWeaknessMix(base: GameConfig, ranked: WeaknessRank[]): DrillPlan {
-  const weights: Record<Operation, number> = { add: 0.5, sub: 0.5, mul: 0.5, div: 0.5 };
-  for (const r of ranked) {
-    const op = opOfBucket(r.stat.bucket);
-    weights[op] += r.score * 2;
-  }
-  return {
-    config: cloneConfig(base),
-    weights,
-    focus: ranked.map((r) => r.stat.label),
-  };
 }
 
 /**
