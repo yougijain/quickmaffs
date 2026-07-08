@@ -1,7 +1,7 @@
 import { cloneConfig } from '../engine/config';
 import type { OpWeights } from '../engine/generate';
 import type { GameConfig, Operation } from '../engine/types';
-import { opOfBucket } from '../engine/buckets';
+import { BAND_RANGE, opOfBucket, type Band } from '../engine/buckets';
 import type { WeaknessRank } from './weakness';
 
 export interface DrillPlan {
@@ -58,18 +58,5 @@ export function buildFocusDrill(base: GameConfig, bucket: string, durationSec?: 
 }
 
 function bandToRange(b: string): { min: number; max: number } {
-  switch (b) {
-    case 'sm':
-      return { min: 2, max: 10 };
-    case 'lo':
-      return { min: 11, max: 25 };
-    case 'mid':
-      return { min: 26, max: 50 };
-    case 'hi':
-      return { min: 51, max: 75 };
-    case 'xl':
-      return { min: 76, max: 100 };
-    default:
-      return { min: 2, max: 100 };
-  }
+  return BAND_RANGE[b as Band] ?? { min: 2, max: 100 };
 }
