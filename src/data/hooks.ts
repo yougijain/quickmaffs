@@ -3,6 +3,7 @@ import { db, type SettingsRow } from './db';
 import { DEFAULT_CONFIG, DEFAULT_GOAL_SCORE, cloneConfig } from '../engine/config';
 import { aggregate, globalMedianMs } from '../analytics/aggregate';
 import { rankWeaknesses } from '../analytics/weakness';
+import { buildAdaptivePlan, type AdaptivePlan } from '../analytics/adaptive';
 
 const DEFAULT_SETTINGS: SettingsRow = {
   id: 'local',
@@ -29,6 +30,18 @@ export function useBestScore() {
     const sessions = await db.sessions.toArray();
     return sessions.reduce((best, s) => Math.max(best, s.score), 0);
   }, []);
+}
+
+/**
+ * Live adaptive plan for the next training session. Recomputes whenever
+ * attempts are saved, so it always reflects the just-finished session.
+ */
+export function useAdaptivePlan(): AdaptivePlan | undefined {
+  const settings = useSettings();
+  return useLiveQuery(async () => {
+    const attempts = await db.attempts.toArray();
+    return buildAdaptivePlan(attempts, settings.config);
+  }, [settings.config]);
 }
 
 /** Aggregated weakness ranking across all recorded attempts. */
