@@ -59,15 +59,17 @@ function ActivityGrid({ byDay }: { byDay: Map<string, number> }) {
 
 export default function Account() {
   const navigate = useNavigate();
-  const { cloudEnabled, user, isAnonymous, backUpToEmail, sendSignInCode, verifySignInCode, signOut } = useAuth();
+  const { cloudEnabled, user, isAnonymous, backUpToEmail, setPassword, signInWithPassword, signOut } = useAuth();
   const sessions = useSessions() ?? [];
-  const [email, setEmail] = useState('');
-  const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [restoreEmail, setRestoreEmail] = useState('');
-  const [restoreCode, setRestoreCode] = useState('');
-  const [codeSent, setCodeSent] = useState(false);
-  const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
+  // anonymous card: toggle between creating a backup and signing in
+  const [authMode, setAuthMode] = useState<'backup' | 'signin'>('backup');
+  const [email, setEmail] = useState('');
+  const [password, setPwd] = useState('');
+  const [msg, setMsg] = useState<string | null>(null);
+  // signed-in card: set/change password
+  const [newPwd, setNewPwd] = useState('');
+  const [pwdMsg, setPwdMsg] = useState<string | null>(null);
 
   const stats = useMemo(() => {
     let problems = 0;
@@ -90,13 +92,36 @@ export default function Account() {
 
   const tier = tierFor(stats.bestClassic);
 
-  const doBackup = async () => {
-    if (!email) return setMsg('Enter your email first.');
+  const submitAuth = async () => {
+    if (!email || password.length < 6) {
+      return setMsg('Enter your email and a password (6+ characters).');
+    }
     setBusy(true);
     setMsg(null);
-    const err = await backUpToEmail(email.trim());
+    const err =
+      authMode === 'backup'
+        ? await backUpToEmail(email.trim(), password)
+        : await signInWithPassword(email.trim(), password);
     setBusy(false);
-    setMsg(err ?? 'Confirmation link sent — open it on this device to finish.');
+    if (err) setMsg(err);
+    else {
+      setPwd('');
+      setMsg(
+        authMode === 'backup'
+          ? 'Backed up — you can now sign in with this email + password on any device.'
+          : 'Signed in — your history is downloading.',
+      );
+    }
+  };
+
+  const doSetPassword = async () => {
+    if (newPwd.length < 6) return setPwdMsg('Use at least 6 characters.');
+    setBusy(true);
+    setPwdMsg(null);
+    const err = await setPassword(newPwd);
+    setBusy(false);
+    setNewPwd('');
+    setPwdMsg(err ?? 'Password saved — use it to sign in on other devices.');
   };
 
   const initial = (user?.email ?? 'G').slice(0, 1).toUpperCase();
@@ -147,9 +172,11 @@ export default function Account() {
 
       {cloudEnabled && isAnonymous && (
         <Card>
-          <Eyebrow>Back up your progress</Eyebrow>
+          <Eyebrow>{authMode === 'backup' ? 'Back up your progress' : 'Sign in to restore'}</Eyebrow>
           <p className="mt-1 text-sm text-muted">
-            Add an email so your history survives clearing the app and follows you to other devices.
+            {authMode === 'backup'
+              ? 'Set an email + password so your history survives clearing the app and follows you to other devices.'
+              : 'Enter the email + password you backed up with — your history downloads right here, no email needed.'}
           </p>
           <div className="mt-3 flex flex-col gap-2">
             <input
@@ -161,81 +188,51 @@ export default function Account() {
               onChange={(e) => setEmail(e.target.value)}
               className="rounded-xl border border-line bg-ink-900 px-3 py-2.5 text-fg"
             />
-            <Button onClick={doBackup} disabled={busy || !email}>
-              Send confirmation link
+            <input
+              type="password"
+              placeholder="Password"
+              autoComplete={authMode === 'backup' ? 'new-password' : 'current-password'}
+              value={password}
+              onChange={(e) => setPwd(e.target.value)}
+              className="rounded-xl border border-line bg-ink-900 px-3 py-2.5 text-fg"
+            />
+            <Button onClick={submitAuth} disabled={busy || !email || password.length < 6}>
+              {authMode === 'backup' ? 'Back up account' : 'Sign in & restore'}
             </Button>
           </div>
           {msg && <p className="mt-2 text-sm text-gold">{msg}</p>}
+          <button
+            className="mt-3 text-xs text-faint underline"
+            onClick={() => {
+              setAuthMode(authMode === 'backup' ? 'signin' : 'backup');
+              setMsg(null);
+            }}
+          >
+            {authMode === 'backup' ? 'Already have an account? Sign in' : 'New here? Back up instead'}
+          </button>
+        </Card>
+      )}
 
-          <div className="mt-4 border-t border-line pt-3">
-            <p className="text-sm text-muted">Already backed up on another device?</p>
-            {!codeSent ? (
-              <div className="mt-2 flex flex-col gap-2">
-                <input
-                  type="email"
-                  inputMode="email"
-                  placeholder="you@email.com"
-                  autoComplete="email"
-                  value={restoreEmail}
-                  onChange={(e) => setRestoreEmail(e.target.value)}
-                  className="rounded-xl border border-line bg-ink-900 px-3 py-2.5 text-fg"
-                />
-                <Button
-                  variant="secondary"
-                  disabled={busy || !restoreEmail}
-                  onClick={async () => {
-                    setBusy(true);
-                    setRestoreMsg(null);
-                    const err = await sendSignInCode(restoreEmail.trim());
-                    setBusy(false);
-                    if (err) setRestoreMsg(err);
-                    else {
-                      setCodeSent(true);
-                      setRestoreMsg('Check your email for a 6-digit code and enter it here.');
-                    }
-                  }}
-                >
-                  Email me a sign-in code
-                </Button>
-              </div>
-            ) : (
-              <div className="mt-2 flex flex-col gap-2">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  placeholder="6-digit code"
-                  value={restoreCode}
-                  onChange={(e) => setRestoreCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="rounded-xl border border-line bg-ink-900 px-3 py-2.5 text-center text-2xl tracking-[0.3em] tabular-nums text-fg"
-                />
-                <Button
-                  disabled={busy || restoreCode.length < 6}
-                  onClick={async () => {
-                    setBusy(true);
-                    setRestoreMsg(null);
-                    const err = await verifySignInCode(restoreEmail.trim(), restoreCode);
-                    setBusy(false);
-                    if (err) setRestoreMsg(err);
-                    else setRestoreMsg('Signed in — your history is downloading.');
-                  }}
-                >
-                  Verify &amp; restore
-                </Button>
-                <button
-                  className="text-xs text-faint underline"
-                  onClick={() => {
-                    setCodeSent(false);
-                    setRestoreCode('');
-                    setRestoreMsg(null);
-                  }}
-                >
-                  Use a different email
-                </button>
-              </div>
-            )}
-            {restoreMsg && <p className="mt-2 text-sm text-gold">{restoreMsg}</p>}
+      {cloudEnabled && !isAnonymous && (
+        <Card>
+          <Eyebrow>Password</Eyebrow>
+          <p className="mt-1 text-sm text-muted">
+            Set a password to sign in on other devices (no email round-trip).
+          </p>
+          <div className="mt-3 flex flex-col gap-2">
+            <input
+              type="password"
+              placeholder="New password (6+ characters)"
+              autoComplete="new-password"
+              value={newPwd}
+              onChange={(e) => setNewPwd(e.target.value)}
+              className="rounded-xl border border-line bg-ink-900 px-3 py-2.5 text-fg"
+            />
+            <Button variant="secondary" onClick={doSetPassword} disabled={busy || newPwd.length < 6}>
+              Save password
+            </Button>
           </div>
+          {pwdMsg && <p className="mt-2 text-sm text-gold">{pwdMsg}</p>}
         </Card>
       )}
 
