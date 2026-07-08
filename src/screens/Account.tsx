@@ -170,7 +170,7 @@ export default function Account() {
         </div>
       </Card>
 
-      {cloudEnabled && isAnonymous && (
+      {cloudEnabled && (!user || isAnonymous) && (
         <Card>
           <Eyebrow>{authMode === 'backup' ? 'Back up your progress' : 'Sign in to restore'}</Eyebrow>
           <p className="mt-1 text-sm text-muted">
@@ -213,7 +213,7 @@ export default function Account() {
         </Card>
       )}
 
-      {cloudEnabled && !isAnonymous && (
+      {cloudEnabled && user && !isAnonymous && (
         <Card>
           <Eyebrow>Password</Eyebrow>
           <p className="mt-1 text-sm text-muted">
@@ -264,7 +264,7 @@ export default function Account() {
       </Card>
 
       <div className="flex flex-col gap-2 pb-2">
-        {cloudEnabled && !isAnonymous && (
+        {cloudEnabled && user && !isAnonymous && (
           <Button variant="secondary" onClick={signOut}>
             Sign out
           </Button>

@@ -36,12 +36,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.session) {
         setSession(data.session);
         syncBoth(); // push local + pull cloud history
-      } else {
-        // Frictionless: silently create an anonymous account so sync just works.
-        // Requires "Allow anonymous sign-ins" enabled in the project's auth config.
-        const { error } = await sb.auth.signInAnonymously();
-        if (error) console.warn('anon sign-in failed:', error.message);
       }
+      // Otherwise stay signed-out and play locally. An anonymous account is
+      // created lazily on the first session save (see sync.pushPending), so
+      // merely opening the app never mints an empty account.
       setLoading(false);
     })();
 
@@ -71,12 +69,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAnonymous,
       async backUpToEmail(email, password) {
         if (!supabase) return 'Cloud sync is not configured.';
-        // Attach email + password to the current account in one step. Sign-in
-        // on other devices then needs no email at all (see signInWithPassword).
-        const { error } = await supabase.auth.updateUser(
-          { email, password },
-          { emailRedirectTo: appUrl() },
-        );
+        const { data: current } = await supabase.auth.getUser();
+        if (current.user) {
+          // Convert the existing (anonymous) session into an email account,
+          // keeping its local data. Sign-in elsewhere then needs no email.
+          const { error } = await supabase.auth.updateUser(
+            { email, password },
+            { emailRedirectTo: appUrl() },
+          );
+          return error?.message ?? null;
+        }
+        // No session yet — create a fresh email account; local history syncs up.
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: appUrl() },
+        });
         return error?.message ?? null;
       },
       async setPassword(password) {
@@ -90,9 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return error?.message ?? null;
       },
       async signOut() {
+        // Sign out only. Local play continues; a fresh anonymous identity is
+        // created lazily if/when there's new data to sync.
         await supabase?.auth.signOut();
-        // Immediately re-establish an anonymous session so local play keeps syncing.
-        await supabase?.auth.signInAnonymously();
       },
     }),
     [session, loading, user, isAnonymous],
