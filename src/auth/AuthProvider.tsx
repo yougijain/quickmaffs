@@ -13,7 +13,10 @@ interface AuthContextValue {
   isAnonymous: boolean;
   /** Convert the current anonymous account into an email-backed one. */
   backUpToEmail: (email: string) => Promise<string | null>;
-  signInWithMagicLink: (email: string) => Promise<string | null>;
+  /** Send a sign-in email (contains both a link and a 6-digit code). */
+  sendSignInCode: (email: string) => Promise<string | null>;
+  /** Verify the 6-digit code in-app (works inside a home-screen PWA). */
+  verifySignInCode: (email: string, code: string) => Promise<string | null>;
   signOut: () => Promise<void>;
 }
 
@@ -74,11 +77,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase.auth.updateUser({ email }, { emailRedirectTo: appUrl() });
         return error?.message ?? null;
       },
-      async signInWithMagicLink(email) {
+      async sendSignInCode(email) {
         if (!supabase) return 'Cloud sync is not configured.';
+        // Sends the email; template contains both {{ .ConfirmationURL }} (link)
+        // and {{ .Token }} (code). On iOS home-screen apps the code is what
+        // works, since links open in Safari, not the installed app.
         const { error } = await supabase.auth.signInWithOtp({
           email,
           options: { emailRedirectTo: appUrl() },
+        });
+        return error?.message ?? null;
+      },
+      async verifySignInCode(email, code) {
+        if (!supabase) return 'Cloud sync is not configured.';
+        const { error } = await supabase.auth.verifyOtp({
+          email,
+          token: code.trim(),
+          type: 'email',
         });
         return error?.message ?? null;
       },

@@ -59,12 +59,14 @@ function ActivityGrid({ byDay }: { byDay: Map<string, number> }) {
 
 export default function Account() {
   const navigate = useNavigate();
-  const { cloudEnabled, user, isAnonymous, backUpToEmail, signInWithMagicLink, signOut } = useAuth();
+  const { cloudEnabled, user, isAnonymous, backUpToEmail, sendSignInCode, verifySignInCode, signOut } = useAuth();
   const sessions = useSessions() ?? [];
   const [email, setEmail] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [restoreEmail, setRestoreEmail] = useState('');
+  const [restoreCode, setRestoreCode] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
   const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
 
   const stats = useMemo(() => {
@@ -167,30 +169,71 @@ export default function Account() {
 
           <div className="mt-4 border-t border-line pt-3">
             <p className="text-sm text-muted">Already backed up on another device?</p>
-            <div className="mt-2 flex flex-col gap-2">
-              <input
-                type="email"
-                inputMode="email"
-                placeholder="you@email.com"
-                autoComplete="email"
-                value={restoreEmail}
-                onChange={(e) => setRestoreEmail(e.target.value)}
-                className="rounded-xl border border-line bg-ink-900 px-3 py-2.5 text-fg"
-              />
-              <Button
-                variant="secondary"
-                disabled={busy || !restoreEmail}
-                onClick={async () => {
-                  setBusy(true);
-                  setRestoreMsg(null);
-                  const err = await signInWithMagicLink(restoreEmail.trim());
-                  setBusy(false);
-                  setRestoreMsg(err ?? 'Sign-in link sent — open it and your history downloads automatically.');
-                }}
-              >
-                Email me a sign-in link
-              </Button>
-            </div>
+            {!codeSent ? (
+              <div className="mt-2 flex flex-col gap-2">
+                <input
+                  type="email"
+                  inputMode="email"
+                  placeholder="you@email.com"
+                  autoComplete="email"
+                  value={restoreEmail}
+                  onChange={(e) => setRestoreEmail(e.target.value)}
+                  className="rounded-xl border border-line bg-ink-900 px-3 py-2.5 text-fg"
+                />
+                <Button
+                  variant="secondary"
+                  disabled={busy || !restoreEmail}
+                  onClick={async () => {
+                    setBusy(true);
+                    setRestoreMsg(null);
+                    const err = await sendSignInCode(restoreEmail.trim());
+                    setBusy(false);
+                    if (err) setRestoreMsg(err);
+                    else {
+                      setCodeSent(true);
+                      setRestoreMsg('Check your email for a 6-digit code and enter it here.');
+                    }
+                  }}
+                >
+                  Email me a sign-in code
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-2 flex flex-col gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="6-digit code"
+                  value={restoreCode}
+                  onChange={(e) => setRestoreCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="rounded-xl border border-line bg-ink-900 px-3 py-2.5 text-center text-2xl tracking-[0.3em] tabular-nums text-fg"
+                />
+                <Button
+                  disabled={busy || restoreCode.length < 6}
+                  onClick={async () => {
+                    setBusy(true);
+                    setRestoreMsg(null);
+                    const err = await verifySignInCode(restoreEmail.trim(), restoreCode);
+                    setBusy(false);
+                    if (err) setRestoreMsg(err);
+                    else setRestoreMsg('Signed in — your history is downloading.');
+                  }}
+                >
+                  Verify &amp; restore
+                </Button>
+                <button
+                  className="text-xs text-faint underline"
+                  onClick={() => {
+                    setCodeSent(false);
+                    setRestoreCode('');
+                    setRestoreMsg(null);
+                  }}
+                >
+                  Use a different email
+                </button>
+              </div>
+            )}
             {restoreMsg && <p className="mt-2 text-sm text-gold">{restoreMsg}</p>}
           </div>
         </Card>
