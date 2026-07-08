@@ -62,6 +62,7 @@ export interface Attempt {
   timeMs: number; // total time-to-answer for this problem
   firstInputMs: number | null; // time to the first keypress (reaction vs compute)
   corrections: number; // backspaces used — a soft error/uncertainty signal
+  answerDigits: number; // number of digits in the answer (difficulty proxy)
   prompt: string;
   bucket: string;
   targeted: boolean; // adaptively steered toward a weak bucket

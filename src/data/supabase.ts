@@ -7,6 +7,14 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL, cloudEnabled } from '../lib/env';
  */
 export const supabase: SupabaseClient | null = cloudEnabled
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: true, autoRefreshToken: true },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        // Parse tokens from the URL when returning from an email link, even
+        // though the app uses a hash router. supabase-js consumes the auth
+        // params and cleans the URL before the router reads the route.
+        detectSessionInUrl: true,
+        flowType: 'implicit',
+      },
     })
   : null;

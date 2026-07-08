@@ -54,6 +54,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const user = session?.user ?? null;
   const isAnonymous = Boolean(user?.is_anonymous);
 
+  // Where email links should land: the exact URL the app is served from
+  // (strip any hash-router fragment). Robust even if the dashboard Site URL
+  // is misconfigured — the link comes back to wherever you actually are.
+  const appUrl = () => (typeof window !== 'undefined' ? window.location.href.split('#')[0] : undefined);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       cloudEnabled,
@@ -66,12 +71,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Attaches an email to the (possibly anonymous) account and sends a
         // confirmation link. After confirming, the same account is reachable
         // from any device via a magic link to that address.
-        const { error } = await supabase.auth.updateUser({ email });
+        const { error } = await supabase.auth.updateUser({ email }, { emailRedirectTo: appUrl() });
         return error?.message ?? null;
       },
       async signInWithMagicLink(email) {
         if (!supabase) return 'Cloud sync is not configured.';
-        const { error } = await supabase.auth.signInWithOtp({ email });
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: appUrl() },
+        });
         return error?.message ?? null;
       },
       async signOut() {

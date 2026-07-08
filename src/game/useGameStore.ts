@@ -9,6 +9,7 @@ import { saveSession } from '../data/repo';
 import { triggerSync } from '../data/sync';
 import { median } from '../analytics/aggregate';
 import { APP_VERSION } from '../lib/version';
+import { platformInfo } from '../lib/platform';
 
 type Status = 'idle' | 'running' | 'finished';
 
@@ -45,6 +46,8 @@ interface GameState {
   start: (config: GameConfig, opts?: StartOptions) => void;
   press: (key: string) => void;
   finish: () => void;
+  /** Quit early: end the session WITHOUT saving it to history. */
+  abort: () => void;
   reset: () => void;
 }
 
@@ -130,6 +133,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         timeMs: Math.round(t - state.problemStartedAt),
         firstInputMs: firstInputAt != null ? Math.round(firstInputAt - state.problemStartedAt) : null,
         corrections: state.corrections,
+        answerDigits: String(state.current.answer).length,
         prompt: state.current.prompt,
         bucket,
         targeted: state.targetBuckets.includes(bucket),
@@ -175,6 +179,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         firstInputMs:
           state.firstInputAt != null ? Math.round(state.firstInputAt - state.problemStartedAt) : null,
         corrections: state.corrections,
+        answerDigits: String(state.current.answer).length,
         prompt: state.current.prompt,
         bucket,
         targeted: state.targetBuckets.includes(bucket),
@@ -188,6 +193,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const correct = attempts.filter((a) => a.correct).length;
     const total = attempts.length;
     const endedAt = Date.now();
+    const ctx = platformInfo();
     void saveSession(
       {
         id: state.sessionId,
@@ -205,10 +211,20 @@ export const useGameStore = create<GameState>((set, get) => ({
         seed: state.config.seed ?? null,
         config: state.config,
         appVersion: APP_VERSION,
+        platform: ctx.platform,
+        userAgent: ctx.userAgent,
+        localHour: ctx.localHour,
+        timezone: ctx.timezone,
       },
       attempts,
       null,
     ).then(() => triggerSync());
+  },
+
+  abort() {
+    if (get().status !== 'running') return;
+    // Discard everything — a quit session is never persisted or synced.
+    get().reset();
   },
 
   reset() {
