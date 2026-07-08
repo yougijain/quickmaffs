@@ -65,16 +65,29 @@ function toAttemptInsert(row: AttemptRow, userId: string) {
 }
 
 export async function pushPending(): Promise<void> {
-  if (!supabase || pushing || typeof navigator !== 'undefined' && !navigator.onLine) return;
-  const userId = await currentUserId();
-  if (!userId) return;
+  if (!supabase || pushing || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
 
   pushing = true;
   try {
-    // Backfill any local rows created while anonymous, then push.
     const pendingSessions = await db.sessions.where('synced').equals(0).toArray();
+    const pendingAttempts = await db.attempts.where('synced').equals(0).toArray();
+    const settings = await db.settings.get('local');
+    const settingsPending = settings?.synced === 0;
+    const hasPending = pendingSessions.length > 0 || pendingAttempts.length > 0 || settingsPending;
+
+    let userId = await currentUserId();
+    if (!userId) {
+      // Only mint an (anonymous) account when there's actually data to store —
+      // opening the app or browsing never creates one.
+      if (!hasPending) return;
+      const { data, error } = await supabase.auth.signInAnonymously();
+      if (error || !data.user) return;
+      userId = data.user.id;
+    }
+
+    // Backfill any local rows created before this account existed, then push.
     if (pendingSessions.length) {
-      const payload = pendingSessions.map((s) => toSessionInsert(s, userId));
+      const payload = pendingSessions.map((s) => toSessionInsert(s, userId!));
       const { error } = await supabase.from('sessions').upsert(payload, { onConflict: 'id' });
       if (!error) {
         await db.transaction('rw', db.sessions, async () => {
@@ -83,9 +96,8 @@ export async function pushPending(): Promise<void> {
       }
     }
 
-    const pendingAttempts = await db.attempts.where('synced').equals(0).toArray();
     if (pendingAttempts.length) {
-      const payload = pendingAttempts.map((a) => toAttemptInsert(a, userId));
+      const payload = pendingAttempts.map((a) => toAttemptInsert(a, userId!));
       const { error } = await supabase.from('attempts').upsert(payload, { onConflict: 'id' });
       if (!error) {
         await db.transaction('rw', db.attempts, async () => {
@@ -95,8 +107,7 @@ export async function pushPending(): Promise<void> {
     }
 
     // Push local settings (mutable — resolved by updated_at server-side).
-    const settings = await db.settings.get('local');
-    if (settings && settings.synced === 0) {
+    if (settings && settingsPending) {
       const { error } = await supabase
         .from('user_settings')
         .upsert(
