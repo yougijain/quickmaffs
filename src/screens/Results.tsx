@@ -9,6 +9,9 @@ import { median } from '../analytics/aggregate';
 import { formatMs } from '../lib/format';
 import { DistributionChart } from '../components/charts';
 import { ordinal, percentileFor } from '../benchmark/distribution';
+import { useAdaptivePlan } from '../data/hooks';
+import { makeAdaptiveSelector } from '../analytics/adaptive';
+import { pct } from '../lib/format';
 
 export default function Results() {
   const navigate = useNavigate();
@@ -19,6 +22,9 @@ export default function Results() {
   const weights = useGameStore((s) => s.weights);
   const focus = useGameStore((s) => s.focus);
   const start = useGameStore((s) => s.start);
+  // Live plan — recomputes once this session's attempts land in Dexie, so it
+  // already reflects the run you just finished.
+  const plan = useAdaptivePlan();
 
   const tier = tierFor(score);
 
@@ -41,9 +47,17 @@ export default function Results() {
   const avgMs = median(attempts.filter((a) => a.correct).map((a) => a.timeMs));
 
   const playAgain = () => {
-    start(config, { mode, weights, focus });
+    // Adaptive sessions rebuild the selector from the freshest plan — that is
+    // the loop: play, weights shift, play again.
+    if (mode === 'adaptive') {
+      start(config, { mode, selector: plan ? makeAdaptiveSelector(plan) : undefined });
+    } else {
+      start(config, { mode, weights, focus });
+    }
     navigate('/game', { replace: true });
   };
+
+  const nextTargets = plan?.targets.slice(0, 3) ?? [];
 
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col gap-4 px-4 pt-safe pb-safe">
@@ -82,6 +96,28 @@ export default function Results() {
         </div>
       </Card>
 
+      {mode === 'adaptive' && (
+        <Card>
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">
+            Next session targets
+          </div>
+          {nextTargets.length === 0 ? (
+            <p className="text-sm text-muted">No clear weak spots — the next session stays fully mixed.</p>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {nextTargets.map((t) => (
+                <div key={t.bucket} className="flex items-center justify-between text-sm">
+                  <span className="text-fg">{t.label}</span>
+                  <span className="tabular-nums text-faint">
+                    {t.errorRate > 0.05 ? `${pct(t.errorRate)} errors` : `${t.rel.toFixed(1)}× expected time`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
       {byOp.length > 0 && (
         <Card>
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">By operation</div>
@@ -99,7 +135,7 @@ export default function Results() {
       )}
 
       <div className="mt-auto flex flex-col gap-2 pb-4">
-        <Button onClick={playAgain}>Play again</Button>
+        <Button onClick={playAgain}>{mode === 'adaptive' ? 'Train again' : 'Play again'}</Button>
         <div className="grid grid-cols-2 gap-2">
           <Button variant="secondary" onClick={() => navigate('/analytics')}>
             View stats

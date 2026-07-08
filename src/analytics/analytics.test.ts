@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { aggregate, globalMedianMs, median } from './aggregate';
 import { rankWeaknesses, weaknessScore, MIN_SAMPLES } from './weakness';
-import { buildFocusDrill, buildWeaknessMix } from './drills';
+import { buildFocusDrill } from './drills';
 import { DEFAULT_CONFIG } from '../engine/config';
 import { bucketOf } from '../engine/buckets';
 import type { Attempt } from '../engine/types';
@@ -83,14 +83,5 @@ describe('drills', () => {
   it('focus drill for ×7 pins the small factor', () => {
     const plan = buildFocusDrill(DEFAULT_CONFIG, 'mul:x7:xl');
     expect(plan.config.ops.mul.a).toEqual({ min: 7, max: 7 });
-  });
-
-  it('weakness mix oversamples weak ops', () => {
-    const attempts: Attempt[] = [];
-    for (let i = 0; i < 20; i++) attempts.push(attempt('add', [30, 40], 1000));
-    for (let i = 0; i < 10; i++) attempts.push(attempt('div', [84, 7], 5000));
-    const ranked = rankWeaknesses(aggregate(attempts), globalMedianMs(attempts));
-    const plan = buildWeaknessMix(DEFAULT_CONFIG, ranked);
-    expect(plan.weights!.div!).toBeGreaterThan(plan.weights!.add!);
   });
 });

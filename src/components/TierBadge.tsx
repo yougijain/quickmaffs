@@ -51,7 +51,7 @@ export function GoalProgress({ score, goal }: { score: number; goal: number }) {
     <div className="w-full">
       <div className="mb-1.5 flex justify-between text-[13px] text-muted">
         <span>Goal {goal}</span>
-        <span className="tabular-nums">{score >= goal ? '🎯 reached' : `${goal - score} to go`}</span>
+        <span className="tabular-nums">{score >= goal ? 'reached' : `${goal - score} to go`}</span>
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink-800">
         <div className="h-full rounded-full bg-brand transition-all duration-500" style={{ width: `${pct * 100}%` }} />
