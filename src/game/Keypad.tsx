@@ -6,17 +6,24 @@ export default function Keypad() {
   const press = useGameStore((s) => s.press);
 
   return (
-    <div className="grid grid-cols-3 gap-2 no-select">
-      {KEYS.map((k) => (
-        <button
-          key={k}
-          onClick={() => press(k)}
-          className="flex min-h-[4rem] items-center justify-center rounded-2xl bg-ink-800 text-2xl font-semibold text-slate-100 active:bg-ink-700 active:scale-95 transition-transform"
-          aria-label={k === 'back' ? 'backspace' : k === 'clear' ? 'clear' : k}
-        >
-          {k === 'back' ? '⌫' : k === 'clear' ? 'C' : k}
-        </button>
-      ))}
+    <div className="grid grid-cols-3 gap-2.5 no-select">
+      {KEYS.map((k) => {
+        const isAction = k === 'back' || k === 'clear';
+        return (
+          <button
+            key={k}
+            onClick={() => press(k)}
+            className={`flex min-h-[4.25rem] items-center justify-center rounded-2xl border text-[26px] font-medium tabular-nums transition-all duration-100 active:scale-[0.96] ${
+              isAction
+                ? 'border-line/60 bg-transparent text-muted active:bg-ink-800'
+                : 'border-line bg-ink-900 text-fg active:bg-ink-800'
+            }`}
+            aria-label={k === 'back' ? 'backspace' : k === 'clear' ? 'clear' : k}
+          >
+            {k === 'back' ? '⌫' : k === 'clear' ? 'C' : k}
+          </button>
+        );
+      })}
     </div>
   );
 }
