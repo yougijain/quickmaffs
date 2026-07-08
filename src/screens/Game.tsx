@@ -41,23 +41,23 @@ export default function Game() {
   if (status !== 'running') return null;
 
   return (
-    <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col px-4 pt-safe pb-safe no-select">
-      <header className="flex items-center justify-between pt-3">
-        <Button variant="ghost" className="min-h-0 px-2 py-1 text-sm" onClick={finish}>
+    <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col px-5 pt-safe pb-safe no-select">
+      <header className="flex items-center justify-between pt-4">
+        <Button variant="ghost" className="min-h-0 px-3 py-1.5 text-sm" onClick={finish}>
           End
         </Button>
         <div className="text-center">
-          <div className="text-xs uppercase tracking-wide text-slate-400">Score</div>
-          <div className="text-2xl font-bold tabular-nums text-emerald-400">{score}</div>
+          <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-faint">Score</div>
+          <div className="text-3xl font-bold tabular-nums text-brand">{score}</div>
         </div>
-        <div className="w-12" />
+        <div className="w-14" />
       </header>
 
       {focus.length > 0 && (
-        <p className="mt-1 text-center text-xs text-amber-300/80">Focus: {focus.join(' · ')}</p>
+        <p className="mt-2 text-center text-xs text-gold/80">Focus · {focus.join(' · ')}</p>
       )}
 
-      <div className="mt-3">
+      <div className="mt-4">
         <Timer remaining={remaining} total={duration} />
       </div>
 
@@ -65,7 +65,7 @@ export default function Game() {
         <ProblemDisplay />
       </div>
 
-      <div className="pb-2">
+      <div className="pb-3">
         <Keypad />
       </div>
     </div>
