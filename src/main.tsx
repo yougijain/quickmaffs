@@ -9,7 +9,7 @@ import Results from './screens/Results';
 import Analytics from './screens/Analytics';
 import Drills from './screens/Drills';
 import Settings from './screens/Settings';
-import Auth from './screens/Auth';
+import Account from './screens/Account';
 import { AuthProvider } from './auth/AuthProvider';
 import { getSettings } from './data/repo';
 
@@ -26,7 +26,7 @@ const router = createHashRouter([
       { path: 'analytics', element: <Analytics /> },
       { path: 'drills', element: <Drills /> },
       { path: 'settings', element: <Settings /> },
-      { path: 'auth', element: <Auth /> },
+      { path: 'account', element: <Account /> },
     ],
   },
   // Game + Results render full-screen (no tab bar), outside the App shell.

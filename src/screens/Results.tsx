@@ -50,7 +50,12 @@ export default function Results() {
     // Adaptive sessions rebuild the selector from the freshest plan — that is
     // the loop: play, weights shift, play again.
     if (mode === 'adaptive') {
-      start(config, { mode, selector: plan ? makeAdaptiveSelector(plan) : undefined });
+      start(config, {
+        mode,
+        selector: plan ? makeAdaptiveSelector(plan) : undefined,
+        focus: plan?.targets.slice(0, 3).map((t) => t.label) ?? [],
+        targetBuckets: plan?.targets.map((t) => t.bucket) ?? [],
+      });
     } else {
       start(config, { mode, weights, focus });
     }

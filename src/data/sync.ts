@@ -20,11 +20,20 @@ function toSessionInsert(row: SessionRow, userId: string) {
   return {
     id: row.id,
     user_id: userId,
+    mode: row.mode,
     started_at: new Date(row.startedAt).toISOString(),
+    ended_at: row.endedAt ? new Date(row.endedAt).toISOString() : null,
     duration_sec: row.durationSec,
     score: row.score,
-    mode: row.mode,
+    total_attempts: row.totalAttempts ?? 0,
+    correct: row.correct ?? 0,
+    errors: row.errors ?? 0,
+    accuracy: row.accuracy ?? null,
+    median_ms: row.medianMs ?? null,
+    focus: row.focus ?? [],
+    seed: row.seed ?? null,
     config: row.config,
+    app_version: row.appVersion ?? null,
   };
 }
 
@@ -33,6 +42,7 @@ function toAttemptInsert(row: AttemptRow, userId: string) {
     id: row.id,
     session_id: row.sessionId,
     user_id: userId,
+    idx: row.idx ?? 0,
     op: row.op,
     operand_a: row.operands[0],
     operand_b: row.operands[1],
@@ -40,8 +50,11 @@ function toAttemptInsert(row: AttemptRow, userId: string) {
     given: row.given,
     correct: row.correct,
     time_ms: row.timeMs,
+    first_input_ms: row.firstInputMs ?? null,
     corrections: row.corrections,
+    prompt: row.prompt ?? null,
     bucket: row.bucket,
+    targeted: row.targeted ?? false,
     ts: new Date(row.ts).toISOString(),
   };
 }

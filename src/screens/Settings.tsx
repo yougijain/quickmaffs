@@ -12,7 +12,7 @@ import { useGameStore } from '../game/useGameStore';
 export default function Settings() {
   const navigate = useNavigate();
   const settings = useSettings();
-  const { user, cloudEnabled, signOut } = useAuth();
+  const { user, cloudEnabled, isAnonymous } = useAuth();
   const start = useGameStore((s) => s.start);
 
   const [config, setConfig] = useState<GameConfig | null>(null);
@@ -149,17 +149,20 @@ export default function Settings() {
           <p className="text-sm text-muted">
             Cloud sync isn’t configured. The app works fully offline; scores are stored on this device.
           </p>
-        ) : user ? (
+        ) : (
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted">{user.email}</span>
-            <Button variant="ghost" className="min-h-0 px-3 py-1 text-sm" onClick={signOut}>
-              Sign out
+            <span className="text-sm text-muted">
+              {user?.email ?? 'Guest'}
+              {isAnonymous && <span className="text-faint"> · not backed up</span>}
+            </span>
+            <Button
+              variant="ghost"
+              className="min-h-0 px-3 py-1 text-sm"
+              onClick={() => navigate('/account')}
+            >
+              View →
             </Button>
           </div>
-        ) : (
-          <Button variant="secondary" onClick={() => navigate('/auth')}>
-            Sign in to sync
-          </Button>
         )}
       </Card>
     </div>
