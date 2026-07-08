@@ -17,6 +17,10 @@ export interface SessionRow {
   seed: number | null;
   config: GameConfig;
   appVersion: string;
+  platform: string;
+  userAgent: string;
+  localHour: number;
+  timezone: string;
   userId: string | null;
   synced: 0 | 1;
 }

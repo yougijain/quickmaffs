@@ -14,6 +14,15 @@ export default function Game() {
   const duration = useGameStore((s) => s.config.durationSec);
   const focus = useGameStore((s) => s.focus);
   const finish = useGameStore((s) => s.finish);
+  const abort = useGameStore((s) => s.abort);
+
+  // Quitting early discards the session — it never reaches your history.
+  const quit = () => {
+    if (window.confirm('Quit this session? It won’t be saved to your history.')) {
+      abort();
+      navigate('/', { replace: true });
+    }
+  };
 
   // If the user deep-links here without starting, bounce home.
   useEffect(() => {
@@ -43,8 +52,8 @@ export default function Game() {
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col px-5 pt-safe pb-safe no-select">
       <header className="flex items-center justify-between pt-4">
-        <Button variant="ghost" className="min-h-0 px-3 py-1.5 text-sm" onClick={finish}>
-          End
+        <Button variant="ghost" className="min-h-0 px-3 py-1.5 text-sm" onClick={quit}>
+          Quit
         </Button>
         <div className="text-center">
           <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-faint">Score</div>

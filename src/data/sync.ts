@@ -34,6 +34,10 @@ function toSessionInsert(row: SessionRow, userId: string) {
     seed: row.seed ?? null,
     config: row.config,
     app_version: row.appVersion ?? null,
+    platform: row.platform ?? null,
+    user_agent: row.userAgent ?? null,
+    local_hour: row.localHour ?? null,
+    timezone: row.timezone ?? null,
   };
 }
 
@@ -52,6 +56,7 @@ function toAttemptInsert(row: AttemptRow, userId: string) {
     time_ms: row.timeMs,
     first_input_ms: row.firstInputMs ?? null,
     corrections: row.corrections,
+    answer_digits: row.answerDigits ?? null,
     prompt: row.prompt ?? null,
     bucket: row.bucket,
     targeted: row.targeted ?? false,
@@ -126,6 +131,10 @@ interface RemoteSession {
   seed: number | null;
   config: SessionRow['config'];
   app_version: string | null;
+  platform: string | null;
+  user_agent: string | null;
+  local_hour: number | null;
+  timezone: string | null;
 }
 
 interface RemoteAttempt {
@@ -142,6 +151,7 @@ interface RemoteAttempt {
   time_ms: number;
   first_input_ms: number | null;
   corrections: number;
+  answer_digits: number | null;
   prompt: string | null;
   bucket: string;
   targeted: boolean;
@@ -166,6 +176,10 @@ function fromRemoteSession(r: RemoteSession): SessionRow {
     seed: r.seed ?? null,
     config: r.config,
     appVersion: r.app_version ?? '',
+    platform: r.platform ?? '',
+    userAgent: r.user_agent ?? '',
+    localHour: r.local_hour ?? -1,
+    timezone: r.timezone ?? '',
     synced: 1,
   };
 }
@@ -184,6 +198,7 @@ function fromRemoteAttempt(r: RemoteAttempt): AttemptRow {
     timeMs: r.time_ms,
     firstInputMs: r.first_input_ms ?? null,
     corrections: r.corrections ?? 0,
+    answerDigits: r.answer_digits ?? String(r.answer).length,
     prompt: r.prompt ?? '',
     bucket: r.bucket,
     targeted: r.targeted ?? false,
