@@ -11,12 +11,12 @@ interface AuthContextValue {
   loading: boolean;
   /** True while signed in only as an anonymous (not yet email-backed) user. */
   isAnonymous: boolean;
-  /** Convert the current anonymous account into an email-backed one. */
-  backUpToEmail: (email: string) => Promise<string | null>;
-  /** Send a sign-in email (contains both a link and a 6-digit code). */
-  sendSignInCode: (email: string) => Promise<string | null>;
-  /** Verify the 6-digit code in-app (works inside a home-screen PWA). */
-  verifySignInCode: (email: string, code: string) => Promise<string | null>;
+  /** Attach an email + password to the current (anonymous) account. */
+  backUpToEmail: (email: string, password: string) => Promise<string | null>;
+  /** Set/replace the password on the signed-in account. */
+  setPassword: (password: string) => Promise<string | null>;
+  /** Sign in with email + password — fully in-app, no email round-trip. */
+  signInWithPassword: (email: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
 }
 
@@ -69,32 +69,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       loading,
       isAnonymous,
-      async backUpToEmail(email) {
+      async backUpToEmail(email, password) {
         if (!supabase) return 'Cloud sync is not configured.';
-        // Attaches an email to the (possibly anonymous) account and sends a
-        // confirmation link. After confirming, the same account is reachable
-        // from any device via a magic link to that address.
-        const { error } = await supabase.auth.updateUser({ email }, { emailRedirectTo: appUrl() });
+        // Attach email + password to the current account in one step. Sign-in
+        // on other devices then needs no email at all (see signInWithPassword).
+        const { error } = await supabase.auth.updateUser(
+          { email, password },
+          { emailRedirectTo: appUrl() },
+        );
         return error?.message ?? null;
       },
-      async sendSignInCode(email) {
+      async setPassword(password) {
         if (!supabase) return 'Cloud sync is not configured.';
-        // Sends the email; template contains both {{ .ConfirmationURL }} (link)
-        // and {{ .Token }} (code). On iOS home-screen apps the code is what
-        // works, since links open in Safari, not the installed app.
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: { emailRedirectTo: appUrl() },
-        });
+        const { error } = await supabase.auth.updateUser({ password });
         return error?.message ?? null;
       },
-      async verifySignInCode(email, code) {
+      async signInWithPassword(email, password) {
         if (!supabase) return 'Cloud sync is not configured.';
-        const { error } = await supabase.auth.verifyOtp({
-          email,
-          token: code.trim(),
-          type: 'email',
-        });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         return error?.message ?? null;
       },
       async signOut() {
