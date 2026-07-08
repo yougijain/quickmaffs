@@ -16,14 +16,19 @@ export default function Drills() {
 
   const startAdaptive = () => {
     if (!settings || !plan) return;
-    start(settings.config, { mode: 'adaptive', selector: makeAdaptiveSelector(plan) });
+    start(settings.config, {
+      mode: 'adaptive',
+      selector: makeAdaptiveSelector(plan),
+      focus: plan.targets.slice(0, 3).map((t) => t.label),
+      targetBuckets: plan.targets.map((t) => t.bucket),
+    });
     navigate('/game');
   };
 
   const startFocus = (bucket: string, label: string) => {
     if (!settings) return;
     const focusPlan = buildFocusDrill(settings.config, bucket, 120);
-    start(focusPlan.config, { mode: 'drill', focus: [label] });
+    start(focusPlan.config, { mode: 'drill', focus: [label], targetBuckets: [bucket] });
     navigate('/game');
   };
 

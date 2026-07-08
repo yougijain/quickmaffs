@@ -4,10 +4,19 @@ import type { Attempt, GameConfig, SessionMode } from '../engine/types';
 export interface SessionRow {
   id: string;
   startedAt: number; // epoch ms
+  endedAt: number; // epoch ms
   durationSec: number;
   score: number;
   mode: SessionMode;
+  totalAttempts: number;
+  correct: number;
+  errors: number;
+  accuracy: number; // correct / totalAttempts, 0..1
+  medianMs: number;
+  focus: string[]; // targeted bucket keys (adaptive/drill)
+  seed: number | null;
   config: GameConfig;
+  appVersion: string;
   userId: string | null;
   synced: 0 | 1;
 }

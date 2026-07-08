@@ -53,13 +53,17 @@ export interface Problem {
 export interface Attempt {
   id: string;
   sessionId: string;
+  idx: number; // position within the session (0-based)
   op: Operation;
   operands: [number, number];
   answer: number;
   given: number | null; // null if unanswered when the buzzer sounded
   correct: boolean;
-  timeMs: number; // time-to-answer for this problem
+  timeMs: number; // total time-to-answer for this problem
+  firstInputMs: number | null; // time to the first keypress (reaction vs compute)
   corrections: number; // backspaces used — a soft error/uncertainty signal
+  prompt: string;
   bucket: string;
+  targeted: boolean; // adaptively steered toward a weak bucket
   ts: number; // epoch ms
 }

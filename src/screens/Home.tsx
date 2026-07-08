@@ -14,7 +14,7 @@ export default function Home() {
   const plan = useAdaptivePlan();
   const best = useBestScore() ?? 0;
   const start = useGameStore((s) => s.start);
-  const { user, cloudEnabled } = useAuth();
+  const { cloudEnabled, isAnonymous } = useAuth();
 
   const tier = tierFor(best);
   const goal = settings?.goalScore ?? 40;
@@ -24,6 +24,8 @@ export default function Home() {
     start(settings.config, {
       mode: 'adaptive',
       selector: plan ? makeAdaptiveSelector(plan) : undefined,
+      focus: plan?.targets.slice(0, 3).map((t) => t.label) ?? [],
+      targetBuckets: plan?.targets.map((t) => t.bucket) ?? [],
     });
     navigate('/game');
   };
@@ -87,15 +89,15 @@ export default function Home() {
         </Button>
       </div>
 
-      {cloudEnabled && !user && (
-        <button
-          onClick={() => navigate('/auth')}
-          className="flex items-center justify-between rounded-card border border-line bg-ink-900/40 px-5 py-3.5 text-left"
-        >
-          <span className="text-sm text-muted">Sync scores across devices</span>
-          <span className="text-sm font-medium text-brand">Sign in →</span>
-        </button>
-      )}
+      <button
+        onClick={() => navigate('/account')}
+        className="flex items-center justify-between rounded-card border border-line bg-ink-900/40 px-5 py-3.5 text-left"
+      >
+        <span className="text-sm text-muted">
+          {cloudEnabled && isAnonymous ? 'Back up your progress' : 'Account & history'}
+        </span>
+        <span className="text-sm font-medium text-brand">→</span>
+      </button>
     </div>
   );
 }

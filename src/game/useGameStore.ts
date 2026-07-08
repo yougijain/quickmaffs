@@ -7,6 +7,8 @@ import type { Attempt, GameConfig, Problem, SessionMode } from '../engine/types'
 import { uuid } from '../lib/uuid';
 import { saveSession } from '../data/repo';
 import { triggerSync } from '../data/sync';
+import { median } from '../analytics/aggregate';
+import { APP_VERSION } from '../lib/version';
 
 type Status = 'idle' | 'running' | 'finished';
 
@@ -16,7 +18,8 @@ export type ProblemSelector = (rng: Rng) => Problem;
 interface StartOptions {
   mode?: SessionMode;
   weights?: OpWeights;
-  focus?: string[];
+  focus?: string[]; // display labels for the Game header
+  targetBuckets?: string[]; // bucket keys steered toward (marks attempts targeted)
   selector?: ProblemSelector;
 }
 
@@ -25,6 +28,7 @@ interface GameState {
   config: GameConfig;
   mode: SessionMode;
   focus: string[];
+  targetBuckets: string[];
   weights?: OpWeights;
   selector?: ProblemSelector;
   rng: Rng;
@@ -35,6 +39,7 @@ interface GameState {
   attempts: Attempt[];
   startedAt: number;
   problemStartedAt: number;
+  firstInputAt: number | null; // when the first digit of the current problem landed
   corrections: number; // backspaces on the current problem
 
   start: (config: GameConfig, opts?: StartOptions) => void;
@@ -50,6 +55,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   config: cloneConfig(DEFAULT_CONFIG),
   mode: 'classic',
   focus: [],
+  targetBuckets: [],
   weights: undefined,
   rng: makeLiveRng(),
   sessionId: '',
@@ -59,6 +65,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   attempts: [],
   startedAt: 0,
   problemStartedAt: 0,
+  firstInputAt: null,
   corrections: 0,
 
   start(config, opts) {
@@ -70,6 +77,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       config: cloneConfig(config),
       mode: opts?.mode ?? 'classic',
       focus: opts?.focus ?? [],
+      targetBuckets: opts?.targetBuckets ?? [],
       weights: opts?.weights,
       selector: opts?.selector,
       rng,
@@ -80,6 +88,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       attempts: [],
       startedAt: t,
       problemStartedAt: t,
+      firstInputAt: null,
       corrections: 0,
     });
   },
@@ -100,23 +109,30 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     // digit
+    const t0 = nowMs();
+    const firstInputAt = state.firstInputAt ?? (state.input.length === 0 ? t0 : null);
     const next = (state.input + key).slice(0, 9); // cap runaway input
     const value = Number(next);
 
     if (value === state.current.answer && next.length > 0) {
       // Correct → log attempt, auto-advance (Zetamac behavior).
       const t = nowMs();
+      const bucket = bucketOf(state.current);
       const attempt: Attempt = {
         id: uuid(),
         sessionId: state.sessionId,
+        idx: state.attempts.length,
         op: state.current.op,
         operands: state.current.operands,
         answer: state.current.answer,
         given: value,
         correct: true,
         timeMs: Math.round(t - state.problemStartedAt),
+        firstInputMs: firstInputAt != null ? Math.round(firstInputAt - state.problemStartedAt) : null,
         corrections: state.corrections,
-        bucket: bucketOf(state.current),
+        prompt: state.current.prompt,
+        bucket,
+        targeted: state.targetBuckets.includes(bucket),
         ts: Date.now(),
       };
       const problem = state.selector
@@ -129,11 +145,12 @@ export const useGameStore = create<GameState>((set, get) => ({
         input: '',
         corrections: 0,
         problemStartedAt: t,
+        firstInputAt: null,
       });
       return;
     }
 
-    set({ input: next });
+    set({ input: next, firstInputAt });
   },
 
   finish() {
@@ -144,32 +161,50 @@ export const useGameStore = create<GameState>((set, get) => ({
     // buzzer-caught problem still contributes an error/time signal.
     const attempts = [...state.attempts];
     if (state.current && state.input.length > 0) {
+      const bucket = bucketOf(state.current);
       attempts.push({
         id: uuid(),
         sessionId: state.sessionId,
+        idx: attempts.length,
         op: state.current.op,
         operands: state.current.operands,
         answer: state.current.answer,
         given: Number(state.input),
         correct: false,
         timeMs: Math.round(nowMs() - state.problemStartedAt),
+        firstInputMs:
+          state.firstInputAt != null ? Math.round(state.firstInputAt - state.problemStartedAt) : null,
         corrections: state.corrections,
-        bucket: bucketOf(state.current),
+        prompt: state.current.prompt,
+        bucket,
+        targeted: state.targetBuckets.includes(bucket),
         ts: Date.now(),
       });
     }
 
     set({ status: 'finished', attempts });
 
-    // Persist locally then push to cloud (both no-op-safe if unconfigured).
+    // Denormalized aggregates for fast history rendering.
+    const correct = attempts.filter((a) => a.correct).length;
+    const total = attempts.length;
+    const endedAt = Date.now();
     void saveSession(
       {
         id: state.sessionId,
-        startedAt: Date.now() - Math.round(nowMs() - state.startedAt),
+        startedAt: endedAt - Math.round(nowMs() - state.startedAt),
+        endedAt,
         durationSec: state.config.durationSec,
         score: state.score,
         mode: state.mode,
+        totalAttempts: total,
+        correct,
+        errors: total - correct,
+        accuracy: total > 0 ? correct / total : 0,
+        medianMs: median(attempts.filter((a) => a.correct).map((a) => a.timeMs)),
+        focus: state.focus,
+        seed: state.config.seed ?? null,
         config: state.config,
+        appVersion: APP_VERSION,
       },
       attempts,
       null,
@@ -177,6 +212,15 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   reset() {
-    set({ status: 'idle', current: null, input: '', score: 0, attempts: [], selector: undefined });
+    set({
+      status: 'idle',
+      current: null,
+      input: '',
+      score: 0,
+      attempts: [],
+      selector: undefined,
+      targetBuckets: [],
+      firstInputAt: null,
+    });
   },
 }));

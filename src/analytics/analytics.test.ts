@@ -10,14 +10,18 @@ function attempt(op: Attempt['op'], operands: [number, number], timeMs: number, 
   return {
     id: Math.random().toString(36),
     sessionId: 's',
+    idx: 0,
     op,
     operands,
     answer: 0,
     given: correct ? 0 : 1,
     correct,
     timeMs,
+    firstInputMs: null,
     corrections: 0,
+    prompt: '',
     bucket: bucketOf({ op, operands }),
+    targeted: false,
     ts: 0,
   };
 }
