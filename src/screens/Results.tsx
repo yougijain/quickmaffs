@@ -48,27 +48,27 @@ export default function Results() {
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col gap-4 px-4 pt-safe pb-safe">
       <div className="pt-6 text-center">
-        <div className="text-sm uppercase tracking-widest text-slate-400">Final Score</div>
-        <div className="text-7xl font-black tabular-nums text-emerald-400">{score}</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">Final Score</div>
+        <div className="text-7xl font-black tabular-nums text-brand">{score}</div>
         <div className="mt-2 flex justify-center">
           <TierBadge tier={tier} large />
         </div>
-        <p className="mt-2 text-sm text-slate-400">{tier.blurb}</p>
+        <p className="mt-2 text-sm text-muted">{tier.blurb}</p>
       </div>
 
       <Card>
-        <div className="mb-3 text-xs uppercase tracking-wide text-slate-400">Benchmark ladder</div>
+        <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">Benchmark ladder</div>
         <TierLadder score={score} />
       </Card>
 
       {mode === 'classic' && config.durationSec === 120 && score > 0 && (
         <Card>
           <div className="mb-1 flex items-baseline gap-2">
-            <span className="text-xs uppercase tracking-wide text-slate-400">Where you stand</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">Where you stand</span>
           </div>
           <div className="mb-1 flex items-baseline gap-2">
-            <span className="text-2xl font-black tabular-nums text-emerald-400">{ordinal(percentileFor(score))}</span>
-            <span className="text-sm text-slate-400">percentile · beat ~{Math.round(percentileFor(score))}% of the field</span>
+            <span className="text-[26px] font-bold tracking-tight tabular-nums text-brand">{ordinal(percentileFor(score))}</span>
+            <span className="text-sm text-muted">percentile · beat ~{Math.round(percentileFor(score))}% of the field</span>
           </div>
           <DistributionChart score={score} />
         </Card>
@@ -84,12 +84,12 @@ export default function Results() {
 
       {byOp.length > 0 && (
         <Card>
-          <div className="mb-2 text-xs uppercase tracking-wide text-slate-400">By operation</div>
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">By operation</div>
           <div className="flex flex-col gap-2">
             {byOp.map((r) => (
               <div key={r.op} className="flex items-center justify-between text-sm">
-                <span className="text-slate-300">{OP_LABEL[r.op]}</span>
-                <span className="tabular-nums text-slate-400">
+                <span className="text-muted">{OP_LABEL[r.op]}</span>
+                <span className="tabular-nums text-muted">
                   {r.count} · {formatMs(r.medianMs)} median
                 </span>
               </div>

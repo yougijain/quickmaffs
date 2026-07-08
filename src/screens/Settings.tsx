@@ -27,7 +27,7 @@ export default function Settings() {
     }
   }, [settings, config]);
 
-  if (!config) return <p className="text-slate-400">Loading…</p>;
+  if (!config) return <p className="text-muted">Loading…</p>;
 
   const update = (fn: (c: GameConfig) => void) => {
     const next = cloneConfig(config);
@@ -69,14 +69,14 @@ export default function Settings() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-black tracking-tight">Settings</h1>
+      <h1 className="text-[26px] font-bold tracking-tight">Settings</h1>
 
       <Card>
         <label className="flex items-center justify-between">
           <span className="font-medium">Timer</span>
           <span className="flex items-center gap-2">
             <NumberInput value={config.durationSec} onChange={(v) => update((c) => (c.durationSec = v))} />
-            <span className="text-sm text-slate-400">sec</span>
+            <span className="text-sm text-muted">sec</span>
           </span>
         </label>
         <div className="mt-3 flex gap-2">
@@ -106,7 +106,7 @@ export default function Settings() {
             <span className="font-semibold">{OP_LABEL[op]}</span>
             <input
               type="checkbox"
-              className="h-6 w-6 accent-emerald-500"
+              className="h-6 w-6 accent-brand"
               checked={config.ops[op].enabled}
               onChange={(e) => update((c) => (c.ops[op].enabled = e.target.checked))}
             />
@@ -129,7 +129,7 @@ export default function Settings() {
       ))}
 
       {error && <p className="text-sm text-red-400">{error}</p>}
-      {saved && <p className="text-sm text-emerald-400">Saved ✓</p>}
+      {saved && <p className="text-sm text-brand">Saved ✓</p>}
 
       <div className="flex flex-col gap-2">
         <Button onClick={playCustom}>Play with these settings</Button>
@@ -144,14 +144,14 @@ export default function Settings() {
       </div>
 
       <Card>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">Account</h2>
+        <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">Account</h2>
         {!cloudEnabled ? (
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-muted">
             Cloud sync isn’t configured. The app works fully offline; scores are stored on this device.
           </p>
         ) : user ? (
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-300">{user.email}</span>
+            <span className="text-sm text-muted">{user.email}</span>
             <Button variant="ghost" className="min-h-0 px-3 py-1 text-sm" onClick={signOut}>
               Sign out
             </Button>
@@ -189,10 +189,10 @@ function RangeRow({
 }) {
   return (
     <div>
-      <div className="mb-1 text-xs text-slate-400">{label}</div>
+      <div className="mb-1 text-xs text-muted">{label}</div>
       <div className="flex items-center gap-1">
         <NumberInput value={range.min} onChange={(v) => onChange({ ...range, min: v })} />
-        <span className="text-slate-500">–</span>
+        <span className="text-faint">–</span>
         <NumberInput value={range.max} onChange={(v) => onChange({ ...range, max: v })} />
       </div>
     </div>

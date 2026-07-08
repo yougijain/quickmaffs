@@ -15,9 +15,9 @@ export default function Auth() {
   if (!cloudEnabled) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-black">Sign in</h1>
+        <h1 className="text-[26px] font-bold tracking-tight">Sign in</h1>
         <Card>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-muted">
             Cloud sync isn’t configured for this build. Everything works offline and your scores are saved on this
             device.
           </p>
@@ -32,9 +32,9 @@ export default function Auth() {
   if (user) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-black">Signed in</h1>
+        <h1 className="text-[26px] font-bold tracking-tight">Signed in</h1>
         <Card>
-          <p className="text-sm text-slate-300">{user.email}</p>
+          <p className="text-sm text-muted">{user.email}</p>
         </Card>
         <Button onClick={() => navigate('/')}>Done</Button>
       </div>
@@ -61,7 +61,7 @@ export default function Auth() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-black">{mode === 'signin' ? 'Sign in' : 'Create account'}</h1>
+      <h1 className="text-[26px] font-bold tracking-tight">{mode === 'signin' ? 'Sign in' : 'Create account'}</h1>
       <Card className="flex flex-col gap-3">
         <input
           type="email"
@@ -87,10 +87,10 @@ export default function Auth() {
         </Button>
       </Card>
 
-      {msg && <p className="text-sm text-amber-300">{msg}</p>}
+      {msg && <p className="text-sm text-gold">{msg}</p>}
 
       <button
-        className="text-sm text-slate-400 underline"
+        className="text-sm text-muted underline"
         onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
       >
         {mode === 'signin' ? 'Need an account? Sign up' : 'Have an account? Sign in'}
