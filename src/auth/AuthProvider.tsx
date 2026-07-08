@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../data/supabase';
 import { cloudEnabled } from '../lib/env';
-import { installSyncListeners, triggerSync } from '../data/sync';
+import { installSyncListeners, syncBoth, triggerSync } from '../data/sync';
 
 interface AuthContextValue {
   cloudEnabled: boolean;
@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data } = await sb.auth.getSession();
       if (data.session) {
         setSession(data.session);
-        triggerSync();
+        syncBoth(); // push local + pull cloud history
       } else {
         // Frictionless: silently create an anonymous account so sync just works.
         // Requires "Allow anonymous sign-ins" enabled in the project's auth config.
@@ -42,9 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     })();
 
-    const { data: sub } = sb.auth.onAuthStateChange((_evt, next) => {
+    const { data: sub } = sb.auth.onAuthStateChange((evt, next) => {
       setSession(next);
-      if (next) triggerSync();
+      // On a real sign-in (e.g. magic link on a new device), pull history down.
+      if (evt === 'SIGNED_IN') syncBoth();
+      else if (next) triggerSync();
     });
     return () => sub.subscription.unsubscribe();
   }, []);

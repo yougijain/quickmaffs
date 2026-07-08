@@ -107,9 +107,156 @@ export async function pushPending(): Promise<void> {
   }
 }
 
+/* ------------------------------------------------------------------ pull */
+
+interface RemoteSession {
+  id: string;
+  user_id: string;
+  mode: SessionRow['mode'];
+  started_at: string;
+  ended_at: string | null;
+  duration_sec: number;
+  score: number;
+  total_attempts: number;
+  correct: number;
+  errors: number;
+  accuracy: number | null;
+  median_ms: number | null;
+  focus: string[] | null;
+  seed: number | null;
+  config: SessionRow['config'];
+  app_version: string | null;
+}
+
+interface RemoteAttempt {
+  id: string;
+  session_id: string;
+  user_id: string;
+  idx: number;
+  op: AttemptRow['op'];
+  operand_a: number;
+  operand_b: number;
+  answer: number;
+  given: number | null;
+  correct: boolean;
+  time_ms: number;
+  first_input_ms: number | null;
+  corrections: number;
+  prompt: string | null;
+  bucket: string;
+  targeted: boolean;
+  ts: string;
+}
+
+function fromRemoteSession(r: RemoteSession): SessionRow {
+  return {
+    id: r.id,
+    userId: r.user_id,
+    mode: r.mode,
+    startedAt: Date.parse(r.started_at),
+    endedAt: r.ended_at ? Date.parse(r.ended_at) : Date.parse(r.started_at),
+    durationSec: r.duration_sec,
+    score: r.score,
+    totalAttempts: r.total_attempts ?? 0,
+    correct: r.correct ?? 0,
+    errors: r.errors ?? 0,
+    accuracy: r.accuracy ?? 0,
+    medianMs: r.median_ms ?? 0,
+    focus: r.focus ?? [],
+    seed: r.seed ?? null,
+    config: r.config,
+    appVersion: r.app_version ?? '',
+    synced: 1,
+  };
+}
+
+function fromRemoteAttempt(r: RemoteAttempt): AttemptRow {
+  return {
+    id: r.id,
+    sessionId: r.session_id,
+    userId: r.user_id,
+    idx: r.idx ?? 0,
+    op: r.op,
+    operands: [r.operand_a, r.operand_b],
+    answer: r.answer,
+    given: r.given,
+    correct: r.correct,
+    timeMs: r.time_ms,
+    firstInputMs: r.first_input_ms ?? null,
+    corrections: r.corrections ?? 0,
+    prompt: r.prompt ?? '',
+    bucket: r.bucket,
+    targeted: r.targeted ?? false,
+    ts: Date.parse(r.ts),
+    synced: 1,
+  };
+}
+
+let pulling = false;
+
+/**
+ * Download this account's cloud history into the local store. Runs on login so
+ * a fresh device / cleared browser gets its full history back. Rows are keyed
+ * by UUID and immutable, so bulkPut merges cleanly with any local data.
+ */
+export async function pullAll(): Promise<void> {
+  if (!supabase || pulling || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
+  const userId = await currentUserId();
+  if (!userId) return;
+
+  pulling = true;
+  try {
+    const { data: sessions } = await supabase.from('sessions').select('*').eq('user_id', userId);
+    if (sessions?.length) await db.sessions.bulkPut(sessions.map((s) => fromRemoteSession(s as RemoteSession)));
+
+    // Attempts can be many — page through in chunks.
+    const PAGE = 1000;
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from('attempts')
+        .select('*')
+        .eq('user_id', userId)
+        .order('ts', { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error || !data?.length) break;
+      await db.attempts.bulkPut(data.map((a) => fromRemoteAttempt(a as RemoteAttempt)));
+      if (data.length < PAGE) break;
+    }
+
+    // Settings: adopt the cloud copy if it's newer than local.
+    const { data: remoteSettings } = await supabase
+      .from('user_settings')
+      .select('config, goal_score, updated_at')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (remoteSettings) {
+      const local = await db.settings.get('local');
+      const remoteAt = remoteSettings.updated_at ? Date.parse(remoteSettings.updated_at) : 0;
+      if (!local || remoteAt > local.updatedAt) {
+        await db.settings.put({
+          id: 'local',
+          config: remoteSettings.config,
+          goalScore: remoteSettings.goal_score,
+          updatedAt: remoteAt,
+          synced: 1,
+        });
+      }
+    }
+  } catch {
+    // best-effort; a later login/foreground retries
+  } finally {
+    pulling = false;
+  }
+}
+
 /** Fire-and-forget; safe to call after every session finish. */
 export function triggerSync(): void {
   void pushPending();
+}
+
+/** Push local changes up, then pull anything new down. Use on login. */
+export function syncBoth(): void {
+  void pushPending().then(() => pullAll());
 }
 
 /** Wire up automatic sync on regaining connectivity / app foreground. */

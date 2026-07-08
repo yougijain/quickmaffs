@@ -59,11 +59,13 @@ function ActivityGrid({ byDay }: { byDay: Map<string, number> }) {
 
 export default function Account() {
   const navigate = useNavigate();
-  const { cloudEnabled, user, isAnonymous, backUpToEmail, signOut } = useAuth();
+  const { cloudEnabled, user, isAnonymous, backUpToEmail, signInWithMagicLink, signOut } = useAuth();
   const sessions = useSessions() ?? [];
   const [email, setEmail] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [restoreEmail, setRestoreEmail] = useState('');
+  const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
 
   const stats = useMemo(() => {
     let problems = 0;
@@ -162,6 +164,35 @@ export default function Account() {
             </Button>
           </div>
           {msg && <p className="mt-2 text-sm text-gold">{msg}</p>}
+
+          <div className="mt-4 border-t border-line pt-3">
+            <p className="text-sm text-muted">Already backed up on another device?</p>
+            <div className="mt-2 flex flex-col gap-2">
+              <input
+                type="email"
+                inputMode="email"
+                placeholder="you@email.com"
+                autoComplete="email"
+                value={restoreEmail}
+                onChange={(e) => setRestoreEmail(e.target.value)}
+                className="rounded-xl border border-line bg-ink-900 px-3 py-2.5 text-fg"
+              />
+              <Button
+                variant="secondary"
+                disabled={busy || !restoreEmail}
+                onClick={async () => {
+                  setBusy(true);
+                  setRestoreMsg(null);
+                  const err = await signInWithMagicLink(restoreEmail.trim());
+                  setBusy(false);
+                  setRestoreMsg(err ?? 'Sign-in link sent — open it and your history downloads automatically.');
+                }}
+              >
+                Email me a sign-in link
+              </Button>
+            </div>
+            {restoreMsg && <p className="mt-2 text-sm text-gold">{restoreMsg}</p>}
+          </div>
         </Card>
       )}
 
