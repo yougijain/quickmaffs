@@ -18,20 +18,35 @@ export function useCountdown(active: boolean, durationSec: number, onExpire: () 
     setRemaining(durationSec);
 
     let raf = 0;
+    const expire = () => {
+      if (firedRef.current) return;
+      firedRef.current = true;
+      cbRef.current();
+    };
     const tick = () => {
       const left = Math.max(0, (endRef.current - performance.now()) / 1000);
       setRemaining(left);
       if (left <= 0) {
-        if (!firedRef.current) {
-          firedRef.current = true;
-          cbRef.current();
-        }
+        expire();
         return;
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+
+    // rAF is suspended in a backgrounded tab, so the drill wouldn't auto-end on
+    // time. A timeout backstop + a focus/visibility check cover that gap.
+    const timeout = setTimeout(expire, durationSec * 1000 + 50);
+    const onVisible = () => {
+      if (performance.now() >= endRef.current) expire();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(timeout);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [active, durationSec]);
 
   return remaining;

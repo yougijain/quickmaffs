@@ -122,7 +122,10 @@ export function bucketConfig(cfg: GameConfig, bucket: string): GameConfig | null
     if (!br) return null;
     oc.a = { min: f, max: f };
     if (op === 'mul') {
-      const b = intersect(br, oc.b);
+      // bucketOf keys mul by the SMALLER operand, so the other operand must be
+      // >= f for the emitted bucket to actually be mul:xf (else min(f,b)=b).
+      const large = intersect(br, oc.b);
+      const b = large && intersect(large, { min: f, max: Number.MAX_SAFE_INTEGER });
       if (!b) return null;
       oc.b = b;
     } else {
@@ -254,7 +257,12 @@ export function buildAdaptivePlan(attempts: Attempt[], cfg: GameConfig): Adaptiv
   const targets: AdaptiveTarget[] = [];
   for (const bucket of realizableBuckets(cfg)) {
     const s = needOf(bucket);
-    if (s.n > 0.5 && s.need > NEED_THRESHOLD) {
+    if (s.need <= NEED_THRESHOLD) continue;
+    // Only surface buckets we can actually drill (a config exists), so a
+    // "Next session target" is never something the selector can't produce.
+    const config = bucketConfig(cfg, bucket);
+    if (!config) continue;
+    if (s.n > 0.5) {
       targets.push({
         bucket,
         label: bucketLabel(bucket),
@@ -265,9 +273,6 @@ export function buildAdaptivePlan(attempts: Attempt[], cfg: GameConfig): Adaptiv
         n: s.n,
       });
     }
-    if (s.need <= NEED_THRESHOLD) continue;
-    const config = bucketConfig(cfg, bucket);
-    if (!config) continue;
     scored.push({ bucket, ...s, config });
   }
   targets.sort((a, b) => b.need - a.need);

@@ -161,6 +161,20 @@ describe('bucketConfig', () => {
     }
   });
 
+  it('mul bucket keeps the right factor when the other band dips below it', () => {
+    // Regression: for mul:x8:sm the other operand must stay >= 8, else
+    // bucketOf keys min(8,b) and drills the wrong factor.
+    for (const key of ['mul:x8:sm', 'mul:x12:lo', 'mul:x5:sm']) {
+      const cfg = bucketConfig(DEFAULT_CONFIG, key);
+      if (!cfg) continue; // dropped if unrealizable (e.g. band fully below f)
+      for (let i = 0; i < 300; i++) {
+        expect(bucketOf(generateProblem(cfg, rng))).toBe(key);
+      }
+    }
+    // mul:x12:sm is unrealizable (band ≤10 fully below factor 12) → null
+    expect(bucketConfig(DEFAULT_CONFIG, 'mul:x12:sm')).toBeNull();
+  });
+
   it('div bucket generates exactly within the bucket', () => {
     const cfg = bucketConfig(DEFAULT_CONFIG, 'div:by7:hi')!;
     for (let i = 0; i < 300; i++) {
