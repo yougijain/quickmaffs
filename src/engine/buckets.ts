@@ -1,12 +1,32 @@
-import { OP_SYMBOL, type Attempt, type Operation } from './types';
+import { OP_SYMBOL, type Attempt, type Operation, type Range } from './types';
+
+export type Band = 'sm' | 'lo' | 'mid' | 'hi' | 'xl';
 
 /** Coarse magnitude band for an operand in ~[2,100]. */
-export function band(n: number): 'sm' | 'lo' | 'mid' | 'hi' | 'xl' {
+export function band(n: number): Band {
   if (n <= 10) return 'sm';
   if (n <= 25) return 'lo';
   if (n <= 50) return 'mid';
   if (n <= 75) return 'hi';
   return 'xl';
+}
+
+/** Nominal operand range of each band (xl is open-ended above 100 in practice). */
+export const BAND_RANGE: Record<Band, Range> = {
+  sm: { min: 2, max: 10 },
+  lo: { min: 11, max: 25 },
+  mid: { min: 26, max: 50 },
+  hi: { min: 51, max: 75 },
+  xl: { min: 76, max: 100 },
+};
+
+/** Bands whose nominal range overlaps `r` (xl also matches anything above 100). */
+export function bandsIn(r: Range): Band[] {
+  return (Object.keys(BAND_RANGE) as Band[]).filter((b) => {
+    if (b === 'xl') return r.max >= 76;
+    const br = BAND_RANGE[b];
+    return Math.max(br.min, r.min) <= Math.min(br.max, r.max);
+  });
 }
 
 const BAND_LABEL: Record<string, string> = {
