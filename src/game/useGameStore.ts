@@ -107,7 +107,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       return;
     }
     if (key === 'clear') {
-      set({ input: '', corrections: state.corrections + 1 });
+      // Only count a clear as a correction if it actually cleared something.
+      if (state.input.length > 0) {
+        set({ input: '', corrections: state.corrections + 1 });
+      }
       return;
     }
 

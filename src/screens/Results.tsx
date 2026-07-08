@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../game/useGameStore';
 import { tierFor } from '../benchmark/tiers';
@@ -15,6 +15,7 @@ import { pct } from '../lib/format';
 
 export default function Results() {
   const navigate = useNavigate();
+  const status = useGameStore((s) => s.status);
   const attempts = useGameStore((s) => s.attempts);
   const score = useGameStore((s) => s.score);
   const config = useGameStore((s) => s.config);
@@ -63,6 +64,14 @@ export default function Results() {
   };
 
   const nextTargets = plan?.targets.slice(0, 3) ?? [];
+
+  // A reload keeps the #/results hash but resets the in-memory store to idle —
+  // bounce home instead of painting a bogus "Final Score 0".
+  useEffect(() => {
+    if (status === 'idle') navigate('/', { replace: true });
+  }, [status, navigate]);
+
+  if (status === 'idle') return null;
 
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col gap-4 px-4 pt-safe pb-safe">

@@ -106,14 +106,19 @@ export async function pushPending(): Promise<void> {
       }
     }
 
-    // Push local settings (mutable — resolved by updated_at server-side).
+    // Push local settings. Send updated_at explicitly (an onConflict update
+    // does NOT re-fire the column default), so cross-device "newer wins"
+    // compares consistent client-origin timestamps.
     if (settings && settingsPending) {
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert(
-          { user_id: userId, config: settings.config, goal_score: settings.goalScore },
-          { onConflict: 'user_id' },
-        );
+      const { error } = await supabase.from('user_settings').upsert(
+        {
+          user_id: userId,
+          config: settings.config,
+          goal_score: settings.goalScore,
+          updated_at: new Date(settings.updatedAt || Date.now()).toISOString(),
+        },
+        { onConflict: 'user_id' },
+      );
       if (!error) await db.settings.update('local', { synced: 1 });
     }
   } catch {
@@ -232,11 +237,22 @@ export async function pullAll(): Promise<void> {
 
   pulling = true;
   try {
-    const { data: sessions } = await supabase.from('sessions').select('*').eq('user_id', userId);
-    if (sessions?.length) await db.sessions.bulkPut(sessions.map((s) => fromRemoteSession(s as RemoteSession)));
+    const PAGE = 1000;
+
+    // Sessions — paged (a heavy user can exceed PostgREST's 1000-row cap).
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('started_at', { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error || !data?.length) break;
+      await db.sessions.bulkPut(data.map((s) => fromRemoteSession(s as RemoteSession)));
+      if (data.length < PAGE) break;
+    }
 
     // Attempts can be many — page through in chunks.
-    const PAGE = 1000;
     for (let from = 0; ; from += PAGE) {
       const { data, error } = await supabase
         .from('attempts')
@@ -249,7 +265,8 @@ export async function pullAll(): Promise<void> {
       if (data.length < PAGE) break;
     }
 
-    // Settings: adopt the cloud copy if it's newer than local.
+    // Settings: adopt the cloud copy if it's newer than local — but never
+    // clobber an unpushed local change (synced === 0).
     const { data: remoteSettings } = await supabase
       .from('user_settings')
       .select('config, goal_score, updated_at')
@@ -258,7 +275,8 @@ export async function pullAll(): Promise<void> {
     if (remoteSettings) {
       const local = await db.settings.get('local');
       const remoteAt = remoteSettings.updated_at ? Date.parse(remoteSettings.updated_at) : 0;
-      if (!local || remoteAt > local.updatedAt) {
+      const localPending = local?.synced === 0;
+      if (!localPending && (!local || remoteAt > local.updatedAt)) {
         await db.settings.put({
           id: 'local',
           config: remoteSettings.config,
@@ -273,6 +291,20 @@ export async function pullAll(): Promise<void> {
   } finally {
     pulling = false;
   }
+}
+
+/**
+ * Re-flag all local rows as unsynced so the next push re-uploads them under
+ * whatever account is now signed in. Used when an anonymous user signs into an
+ * existing account, so their local history migrates instead of being orphaned.
+ */
+export async function markAllUnsynced(): Promise<void> {
+  await db.transaction('rw', db.sessions, db.attempts, db.settings, async () => {
+    await db.sessions.toCollection().modify({ synced: 0 });
+    await db.attempts.toCollection().modify({ synced: 0 });
+    const s = await db.settings.get('local');
+    if (s) await db.settings.update('local', { synced: 0 });
+  });
 }
 
 /** Fire-and-forget; safe to call after every session finish. */

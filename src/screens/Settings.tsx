@@ -46,17 +46,21 @@ export default function Settings() {
     return config;
   };
 
+  // Guard the goal against 0/negative/blank so GoalProgress + the chart line
+  // stay sensible.
+  const safeGoal = () => (Number.isFinite(goal) && goal > 0 ? Math.round(goal) : 40);
+
   const save = async () => {
     const valid = validateAndGet();
     if (!valid) return;
-    await saveSettings(valid, goal);
+    await saveSettings(valid, safeGoal());
     setSaved(true);
   };
 
   const playCustom = async () => {
     const valid = validateAndGet();
     if (!valid) return;
-    await saveSettings(valid, goal);
+    await saveSettings(valid, safeGoal());
     start(valid, { mode: 'custom' });
     navigate('/game');
   };

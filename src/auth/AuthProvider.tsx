@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../data/supabase';
 import { cloudEnabled } from '../lib/env';
-import { installSyncListeners, syncBoth, triggerSync } from '../data/sync';
+import { installSyncListeners, markAllUnsynced, syncBoth, triggerSync } from '../data/sync';
 
 interface AuthContextValue {
   cloudEnabled: boolean;
@@ -94,6 +94,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async signInWithPassword(email, password) {
         if (!supabase) return 'Cloud sync is not configured.';
+        // If we're leaving an anonymous session that has local (already-synced)
+        // history, re-flag it so the SIGNED_IN push migrates it to this account
+        // instead of orphaning it under the abandoned anonymous user.
+        const { data: cur } = await supabase.auth.getUser();
+        if (cur.user?.is_anonymous) await markAllUnsynced();
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         return error?.message ?? null;
       },
