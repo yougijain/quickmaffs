@@ -35,40 +35,40 @@ export default function Analytics() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-black tracking-tight">Your stats</h1>
+      <h1 className="text-[26px] font-bold tracking-tight">Your stats</h1>
 
       <Card>
-        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-400">Your progress</h2>
+        <h2 className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">Your progress</h2>
         {classicRuns.length === 0 ? (
-          <p className="text-sm text-slate-400">
-            Play a <span className="text-slate-200">120s classic drill</span> to start plotting your scores over
+          <p className="text-sm text-muted">
+            Play a <span className="text-fg">120s classic drill</span> to start plotting your scores over
             time.
           </p>
         ) : (
           <>
             <ScoreHistoryChart data={classicRuns.map((s) => ({ t: s.startedAt, score: s.score }))} goal={goal} />
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-faint">
               {classicRuns.length} classic run{classicRuns.length === 1 ? '' : 's'} · best{' '}
-              <span className="text-amber-300">{bestClassic}</span> · {tierFor(bestClassic).label}
+              <span className="text-gold">{bestClassic}</span> · {tierFor(bestClassic).label}
             </p>
           </>
         )}
       </Card>
 
       <Card>
-        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-slate-400">Where you stand</h2>
+        <h2 className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">Where you stand</h2>
         {bestClassic <= 0 ? (
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-muted">
             Your best 120s score will be plotted against the population curve here.
           </p>
         ) : (
           <>
             <div className="mb-1 flex items-baseline gap-2">
-              <span className="text-3xl font-black tabular-nums text-emerald-400">{ordinal(percentileFor(bestClassic))}</span>
-              <span className="text-sm text-slate-400">percentile — you beat ~{Math.round(percentileFor(bestClassic))}% of the field</span>
+              <span className="text-3xl font-black tabular-nums text-brand">{ordinal(percentileFor(bestClassic))}</span>
+              <span className="text-sm text-muted">percentile — you beat ~{Math.round(percentileFor(bestClassic))}% of the field</span>
             </div>
             <DistributionChart score={bestClassic} />
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-faint">
               Modeled curve (normal, μ45/σ15) calibrated to community &amp; quant-interview benchmarks — there’s no
               official Zetamac dataset. Uses your best 120s classic score.
             </p>
@@ -78,26 +78,26 @@ export default function Analytics() {
 
       <Card>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Weak spots</h2>
-          <span className="text-xs text-slate-500">{data?.total ?? 0} problems logged</span>
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">Weak spots</h2>
+          <span className="text-xs text-faint">{data?.total ?? 0} problems logged</span>
         </div>
 
         {!data || data.total < MIN_SAMPLES ? (
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-muted">
             Play a few drills — once you’ve logged enough problems, your slowest and most error-prone areas show up
             here with one-tap focus practice.
           </p>
         ) : data.ranked.length === 0 ? (
-          <p className="text-sm text-emerald-300">No clear weak spots — your speed is even across the board. 💪</p>
+          <p className="text-sm text-brand">No clear weak spots — your speed is even across the board. 💪</p>
         ) : (
           <div className="flex flex-col gap-2">
             {data.ranked.map((r) => (
               <div key={r.stat.bucket} className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="truncate font-medium text-slate-100">{r.stat.label}</div>
-                  <div className="text-xs text-slate-400">
+                  <div className="truncate font-medium text-fg">{r.stat.label}</div>
+                  <div className="text-xs text-muted">
                     {formatMs(r.stat.medianMs)} median
-                    {r.slowness > 1 && <span className="text-amber-300"> · {r.slowness.toFixed(1)}× slower</span>}
+                    {r.slowness > 1 && <span className="text-gold"> · {r.slowness.toFixed(1)}× slower</span>}
                     {r.stat.errorRate > 0 && <span className="text-red-300"> · {pct(r.stat.errorRate)} errors</span>}
                   </div>
                 </div>
@@ -115,19 +115,19 @@ export default function Analytics() {
       </Card>
 
       <Card>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Recent sessions</h2>
+        <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">Recent sessions</h2>
         {!sessions || sessions.length === 0 ? (
-          <p className="text-sm text-slate-400">No sessions yet.</p>
+          <p className="text-sm text-muted">No sessions yet.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {sessions.slice(0, 10).map((s) => (
               <div key={s.id} className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">{formatDate(s.startedAt)}</span>
+                <span className="text-muted">{formatDate(s.startedAt)}</span>
                 <span className="flex items-center gap-2">
                   {s.mode !== 'classic' && (
-                    <span className="rounded-full bg-ink-800 px-2 py-0.5 text-xs text-slate-400">{s.mode}</span>
+                    <span className="rounded-full bg-ink-800 px-2 py-0.5 text-xs text-muted">{s.mode}</span>
                   )}
-                  <span className="font-bold tabular-nums text-emerald-400">{s.score}</span>
+                  <span className="font-bold tabular-nums text-brand">{s.score}</span>
                 </span>
               </div>
             ))}

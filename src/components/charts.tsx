@@ -43,17 +43,17 @@ export function DistributionChart({ score }: { score: number }) {
       aria-label={`Your score ${score} is at the ${ordinal(pct)} percentile of the population.`}
     >
       {/* full curve area (faint) */}
-      <polygon points={`${padL},${baseline} ${curve} ${W - padR},${baseline}`} fill="#334155" opacity="0.25" />
+      <polygon points={`${padL},${baseline} ${curve} ${W - padR},${baseline}`} fill="#3a433d" opacity="0.25" />
       {/* percentile shading */}
-      {areaPath && <path d={areaPath} fill="#10b981" opacity="0.35" />}
+      {areaPath && <path d={areaPath} fill="#3ddc97" opacity="0.35" />}
       {/* curve line */}
-      <polyline points={curve} fill="none" stroke="#94a3b8" strokeWidth="1.5" />
+      <polyline points={curve} fill="none" stroke="#7a837d" strokeWidth="1.5" />
 
       {/* tier ticks */}
       {TIERS.filter((t) => t.min > 0).map((t) => (
         <g key={t.key}>
-          <line x1={sx(t.min)} y1={baseline} x2={sx(t.min)} y2={baseline + 4} stroke="#475569" strokeWidth="1" />
-          <text x={sx(t.min)} y={baseline + 14} textAnchor="middle" fontSize="9" fill="#64748b">
+          <line x1={sx(t.min)} y1={baseline} x2={sx(t.min)} y2={baseline + 4} stroke="#3a433d" strokeWidth="1" />
+          <text x={sx(t.min)} y={baseline + 14} textAnchor="middle" fontSize="9" fill="#5b635e">
             {t.min}
           </text>
         </g>
@@ -62,25 +62,25 @@ export function DistributionChart({ score }: { score: number }) {
       {/* user marker */}
       {score > 0 && (
         <g>
-          <line x1={markerX} y1={top - 4} x2={markerX} y2={baseline} stroke="#34d399" strokeWidth="2" />
-          <circle cx={markerX} cy={top - 4} r="3.5" fill="#34d399" />
+          <line x1={markerX} y1={top - 4} x2={markerX} y2={baseline} stroke="#3ddc97" strokeWidth="2" />
+          <circle cx={markerX} cy={top - 4} r="3.5" fill="#3ddc97" />
           <text
             x={Math.max(padL + 14, Math.min(W - padR - 14, markerX))}
             y={top - 8}
             textAnchor="middle"
             fontSize="10"
             fontWeight="700"
-            fill="#34d399"
+            fill="#3ddc97"
           >
             you: {score}
           </text>
         </g>
       )}
 
-      <text x={padL} y={H - 4} fontSize="9" fill="#64748b">
+      <text x={padL} y={H - 4} fontSize="9" fill="#5b635e">
         beginner
       </text>
-      <text x={W - padR} y={H - 4} textAnchor="end" fontSize="9" fill="#64748b">
+      <text x={W - padR} y={H - 4} textAnchor="end" fontSize="9" fill="#5b635e">
         elite
       </text>
     </svg>
@@ -119,8 +119,8 @@ export function ScoreHistoryChart({ data, goal }: { data: { t: number; score: nu
       {/* y gridlines + labels */}
       {yTicks.map((v) => (
         <g key={v}>
-          <line x1={padL} y1={py(v)} x2={W - padR} y2={py(v)} stroke="#1e293b" strokeWidth="1" />
-          <text x={padL - 5} y={py(v) + 3} textAnchor="end" fontSize="9" fill="#64748b">
+          <line x1={padL} y1={py(v)} x2={W - padR} y2={py(v)} stroke="#202723" strokeWidth="1" />
+          <text x={padL - 5} y={py(v) + 3} textAnchor="end" fontSize="9" fill="#5b635e">
             {v}
           </text>
         </g>
@@ -134,12 +134,12 @@ export function ScoreHistoryChart({ data, goal }: { data: { t: number; score: nu
             y1={py(goal)}
             x2={W - padR}
             y2={py(goal)}
-            stroke="#f59e0b"
+            stroke="#e5b567"
             strokeWidth="1"
             strokeDasharray="4 3"
             opacity="0.8"
           />
-          <text x={W - padR} y={py(goal) - 3} textAnchor="end" fontSize="9" fill="#f59e0b">
+          <text x={W - padR} y={py(goal) - 3} textAnchor="end" fontSize="9" fill="#e5b567">
             goal {goal}
           </text>
         </g>
@@ -149,12 +149,12 @@ export function ScoreHistoryChart({ data, goal }: { data: { t: number; score: nu
       {n > 1 && (
         <polygon
           points={`${padL},${padT + plotH} ${line} ${W - padR},${padT + plotH}`}
-          fill="#10b981"
+          fill="#3ddc97"
           opacity="0.12"
         />
       )}
       {/* line */}
-      {n > 1 && <polyline points={line} fill="none" stroke="#34d399" strokeWidth="2" />}
+      {n > 1 && <polyline points={line} fill="none" stroke="#3ddc97" strokeWidth="2" />}
 
       {/* points */}
       {data.map((d, i) => (
@@ -163,13 +163,13 @@ export function ScoreHistoryChart({ data, goal }: { data: { t: number; score: nu
           cx={px(i)}
           cy={py(d.score)}
           r={i === bestIdx ? 4 : 2.5}
-          fill={i === bestIdx ? '#fbbf24' : '#34d399'}
+          fill={i === bestIdx ? '#e5b567' : '#3ddc97'}
         />
       ))}
 
       {/* best label */}
       {best > 0 && (
-        <text x={px(bestIdx)} y={py(best) - 7} textAnchor="middle" fontSize="10" fontWeight="700" fill="#fbbf24">
+        <text x={px(bestIdx)} y={py(best) - 7} textAnchor="middle" fontSize="10" fontWeight="700" fill="#e5b567">
           {best}
         </text>
       )}

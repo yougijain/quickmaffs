@@ -32,18 +32,18 @@ export default function Drills() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-black tracking-tight">Targeted drills</h1>
+      <h1 className="text-[26px] font-bold tracking-tight">Targeted drills</h1>
 
       <Card>
         <h2 className="font-semibold">Weakness mix</h2>
-        <p className="mt-1 text-sm text-slate-400">
+        <p className="mt-1 text-sm text-muted">
           Oversamples the areas you’re slowest or most error-prone in, based on your history.
         </p>
         {canMix ? (
           <>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {data!.ranked.slice(0, 4).map((r) => (
-                <span key={r.stat.bucket} className="rounded-full bg-ink-800 px-2.5 py-1 text-xs text-amber-200">
+                <span key={r.stat.bucket} className="rounded-full bg-ink-800 px-2.5 py-1 text-xs text-gold">
                   {r.stat.label}
                 </span>
               ))}
@@ -53,7 +53,7 @@ export default function Drills() {
             </Button>
           </>
         ) : (
-          <p className="mt-3 text-sm text-slate-500">
+          <p className="mt-3 text-sm text-faint">
             Play at least {MIN_SAMPLES}+ problems per area first — then a personalized mix unlocks.
           </p>
         )}
@@ -61,7 +61,7 @@ export default function Drills() {
 
       <Card>
         <h2 className="font-semibold">Single operation</h2>
-        <p className="mt-1 text-sm text-slate-400">Drill one operation at a time using your current ranges.</p>
+        <p className="mt-1 text-sm text-muted">Drill one operation at a time using your current ranges.</p>
         <div className="mt-3 grid grid-cols-2 gap-2">
           {(['add', 'sub', 'mul', 'div'] as Operation[]).map((op) => (
             <Button key={op} variant="secondary" onClick={() => startSingleOp(op)}>
@@ -74,7 +74,7 @@ export default function Drills() {
       <Card className="flex items-center justify-between">
         <div>
           <h2 className="font-semibold">Custom practice</h2>
-          <p className="text-sm text-slate-400">Set your own ranges, ops & timer.</p>
+          <p className="text-sm text-muted">Set your own ranges, ops & timer.</p>
         </div>
         <Button variant="ghost" onClick={() => navigate('/settings')}>
           Configure
