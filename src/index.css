@@ -14,19 +14,43 @@
   }
 
   body {
-    @apply bg-ink-950 text-slate-100 antialiased;
+    @apply bg-ink-950 text-fg antialiased;
+    font-family: theme('fontFamily.sans');
     margin: 0;
-    /* Use dynamic viewport height so iOS URL bar / home indicator don't clip us. */
     min-height: 100dvh;
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* Subtle top glow so the canvas has depth without clutter. */
+    background-image: radial-gradient(120% 80% at 50% -10%, rgba(61, 220, 151, 0.06), transparent 60%);
+    background-attachment: fixed;
   }
 
-  /* No accidental double-tap zoom on interactive elements. */
+  /* Numbers read as tabular for a precise, fintech feel. */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  ::selection {
+    background: rgba(61, 220, 151, 0.25);
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
+  }
+
   button,
   a,
   [role='button'] {
     touch-action: manipulation;
+  }
+
+  input {
+    font-family: inherit;
   }
 }
 
@@ -46,5 +70,9 @@
   .no-select {
     -webkit-user-select: none;
     user-select: none;
+  }
+  /* Hairline top divider used by the nav / sticky bars. */
+  .divide-hairline {
+    border-color: theme('colors.line');
   }
 }
