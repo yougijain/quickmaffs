@@ -32,7 +32,7 @@ export interface OpConfig {
   b: Range;
 }
 
-export type SessionMode = 'classic' | 'drill' | 'custom';
+export type SessionMode = 'classic' | 'adaptive' | 'drill' | 'custom';
 
 export interface GameConfig {
   durationSec: number;

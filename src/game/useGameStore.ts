@@ -10,10 +10,14 @@ import { triggerSync } from '../data/sync';
 
 type Status = 'idle' | 'running' | 'finished';
 
+/** Optional per-session problem source (e.g. the adaptive selector). */
+export type ProblemSelector = (rng: Rng) => Problem;
+
 interface StartOptions {
   mode?: SessionMode;
   weights?: OpWeights;
   focus?: string[];
+  selector?: ProblemSelector;
 }
 
 interface GameState {
@@ -22,6 +26,7 @@ interface GameState {
   mode: SessionMode;
   focus: string[];
   weights?: OpWeights;
+  selector?: ProblemSelector;
   rng: Rng;
   sessionId: string;
   current: Problem | null;
@@ -59,13 +64,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   start(config, opts) {
     const rng = config.seed != null ? mulberry32(config.seed) : makeLiveRng();
     const t = nowMs();
-    const first = generateProblem(config, rng, opts?.weights);
+    const first = opts?.selector ? opts.selector(rng) : generateProblem(config, rng, opts?.weights);
     set({
       status: 'running',
       config: cloneConfig(config),
       mode: opts?.mode ?? 'classic',
       focus: opts?.focus ?? [],
       weights: opts?.weights,
+      selector: opts?.selector,
       rng,
       sessionId: uuid(),
       current: first,
@@ -113,7 +119,9 @@ export const useGameStore = create<GameState>((set, get) => ({
         bucket: bucketOf(state.current),
         ts: Date.now(),
       };
-      const problem = generateProblem(state.config, state.rng, state.weights);
+      const problem = state.selector
+        ? state.selector(state.rng)
+        : generateProblem(state.config, state.rng, state.weights);
       set({
         attempts: [...state.attempts, attempt],
         score: state.score + 1,
@@ -169,6 +177,6 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   reset() {
-    set({ status: 'idle', current: null, input: '', score: 0, attempts: [] });
+    set({ status: 'idle', current: null, input: '', score: 0, attempts: [], selector: undefined });
   },
 }));
