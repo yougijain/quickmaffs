@@ -10,18 +10,27 @@ with [Capacitor](https://capacitorjs.com/) so it can also ship to the App Store.
 
 ## Features
 
-- **Faithful Zetamac drill** — default ranges (add 2–100, mult 2–12 × 2–100,
-  subtraction & division as exact inverses), 120s timer, score = # correct,
-  auto-advance on the correct answer, custom on-screen keypad.
+- **Adaptive training** (the primary loop) — problem selection is weighted
+  toward where you're genuinely slow or error-prone: recency-decayed stats
+  (half-life ~120 attempts), intrinsic-difficulty normalization (division is
+  slower than addition for everyone, so "weak" means slower than expected *for
+  that op*), a shrinkage prior so one bad answer can't hijack the mix, a
+  per-bucket cap (≤30%) with a guaranteed exploration floor, and interleaving
+  guards (no repeated prompts, no 3+ consecutive problems from one bucket).
+  The mix rebalances session-to-session as you improve.
+- **Faithful Zetamac benchmark** — a separate 120s mode locked to exact
+  Zetamac defaults (add 2–100, mult 2–12 × 2–100, subtraction & division as
+  exact inverses), score = # correct, auto-advance, custom on-screen keypad.
+  Only benchmark runs feed the tier ladder and percentile, so scores stay
+  comparable.
 - **Benchmark tiers** — see where your score lands on the quant ladder:
   _Solid Start (30) · Interview-Ready (40) · Strong (50) · Elite (60+)_ — with
   goal tracking.
 - **Weakness analytics** — every problem's operation, operands, correctness, and
   time-to-answer are recorded and bucketed (e.g. `÷ by 7`, `large + large`) so
   your slowest / most error-prone areas surface automatically.
-- **Targeted drills** — a "Weakness mix" that oversamples your weak buckets, a
-  one-tap **Focus drill** for a single weak spot, per-operation practice, and a
-  fully custom mode.
+- **Targeted drills** — one-tap **Focus drill** for a single weak spot,
+  per-operation practice, and a fully custom mode.
 - **Local-first** — works fully offline; scores live on-device. Optional
   Supabase cloud sync layers on top for cross-device history.
 
