@@ -25,10 +25,14 @@ export function useSessions() {
   return useLiveQuery(() => db.sessions.orderBy('startedAt').reverse().toArray(), []);
 }
 
+/** Best BENCHMARK score — 120s classic runs only, so it stays comparable to
+ *  the Zetamac tiers/percentile. Training-session scores don't count here. */
 export function useBestScore() {
   return useLiveQuery(async () => {
     const sessions = await db.sessions.toArray();
-    return sessions.reduce((best, s) => Math.max(best, s.score), 0);
+    return sessions
+      .filter((s) => s.mode === 'classic' && s.durationSec === 120)
+      .reduce((best, s) => Math.max(best, s.score), 0);
   }, []);
 }
 
