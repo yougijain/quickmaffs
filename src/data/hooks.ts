@@ -37,6 +37,20 @@ export function useBestScore() {
 }
 
 /**
+ * Benchmark summary over 120s classic runs: best (drives rank), and average
+ * (your consistency — this is what needs to hit the interview-ready bar, not
+ * just your one-off top score).
+ */
+export function useBenchmarkStats() {
+  return useLiveQuery(async () => {
+    const runs = (await db.sessions.toArray()).filter((s) => s.mode === 'classic' && s.durationSec === 120);
+    const best = runs.reduce((m, s) => Math.max(m, s.score), 0);
+    const average = runs.length ? Math.round(runs.reduce((sum, s) => sum + s.score, 0) / runs.length) : 0;
+    return { best, average, count: runs.length };
+  }, []);
+}
+
+/**
  * Live adaptive plan for the next training session. Recomputes whenever
  * attempts are saved, so it always reflects the just-finished session.
  */

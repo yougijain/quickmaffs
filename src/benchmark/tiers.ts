@@ -1,6 +1,7 @@
 export interface Tier {
   key: string;
   label: string;
+  rank: string; // short rank glyph (D → S) shown as the rank symbol
   min: number; // minimum score (on the 120s default) to reach this tier
   blurb: string;
   color: string; // tailwind color family name
@@ -12,17 +13,18 @@ export interface Tier {
  * 60+ elite (top prop-trading pace).
  */
 export const TIERS: Tier[] = [
-  { key: 'warmup', label: 'Warming Up', min: 0, blurb: 'Keep drilling the fundamentals.', color: 'slate' },
-  { key: 'start', label: 'Solid Start', min: 30, blurb: 'Good foundation — now build speed.', color: 'sky' },
+  { key: 'warmup', label: 'Warming Up', rank: 'D', min: 0, blurb: 'Keep drilling the fundamentals.', color: 'slate' },
+  { key: 'start', label: 'Solid Start', rank: 'C', min: 30, blurb: 'Good foundation — now build speed.', color: 'sky' },
   {
     key: 'inter',
     label: 'Interview-Ready',
+    rank: 'B',
     min: 40,
     blurb: 'Competitive for most quant mental-math screens.',
     color: 'emerald',
   },
-  { key: 'strong', label: 'Strong', min: 50, blurb: 'Above the bar at top trading desks.', color: 'violet' },
-  { key: 'elite', label: 'Elite', min: 60, blurb: 'Top-tier prop-trading pace.', color: 'amber' },
+  { key: 'strong', label: 'Strong', rank: 'A', min: 50, blurb: 'Above the bar at top trading desks.', color: 'violet' },
+  { key: 'elite', label: 'Elite', rank: 'S', min: 60, blurb: 'Top-tier prop-trading pace.', color: 'amber' },
 ];
 
 export function tierFor(score: number): Tier {

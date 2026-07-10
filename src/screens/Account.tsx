@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { useSessions } from '../data/hooks';
 import { Button, Card, Eyebrow, Stat } from '../components/ui';
 import { tierFor } from '../benchmark/tiers';
-import { TierBadge } from '../components/TierBadge';
+import { TierBadge, RankBadge } from '../components/TierBadge';
 import { ordinal, percentileFor } from '../benchmark/distribution';
 import { formatDate, pct } from '../lib/format';
 import type { SessionMode } from '../engine/types';
@@ -83,11 +83,13 @@ export default function Account() {
       const day = new Date(s.startedAt).toISOString().slice(0, 10);
       byDay.set(day, (byDay.get(day) ?? 0) + (s.correct ?? s.score ?? 0));
     }
-    const bestClassic = sessions
-      .filter((s) => s.mode === 'classic' && s.durationSec === 120)
-      .reduce((m, s) => Math.max(m, s.score), 0);
+    const classic = sessions.filter((s) => s.mode === 'classic' && s.durationSec === 120);
+    const bestClassic = classic.reduce((m, s) => Math.max(m, s.score), 0);
+    const avgClassic = classic.length
+      ? Math.round(classic.reduce((sum, s) => sum + s.score, 0) / classic.length)
+      : 0;
     const accuracy = attempts > 0 ? problems / attempts : 0;
-    return { problems, attempts, timeMs, byDay, bestClassic, accuracy, count: sessions.length };
+    return { problems, attempts, timeMs, byDay, bestClassic, avgClassic, accuracy, count: sessions.length };
   }, [sessions]);
 
   const tier = tierFor(stats.bestClassic);
@@ -144,8 +146,9 @@ export default function Account() {
                 : 'Synced & backed up'}
           </p>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
           <TierBadge tier={tier} />
+          <RankBadge score={stats.bestClassic} />
         </div>
       </div>
 
@@ -153,13 +156,17 @@ export default function Account() {
         <div className="grid grid-cols-2 gap-4">
           <Stat label="Benchmark best" value={stats.bestClassic} sub={tier.label} />
           <Stat
+            label="Average"
+            value={stats.avgClassic || '—'}
+            sub={stats.avgClassic > 0 ? tierFor(stats.avgClassic).label : undefined}
+          />
+          <Stat
             label="Percentile"
             value={stats.bestClassic > 0 ? ordinal(percentileFor(stats.bestClassic)) : '—'}
           />
+          <Stat label="Accuracy" value={stats.attempts > 0 ? pct(stats.accuracy) : '—'} />
           <Stat label="Problems solved" value={stats.problems.toLocaleString()} />
           <Stat label="Time trained" value={formatDuration(stats.timeMs)} />
-          <Stat label="Sessions" value={stats.count} />
-          <Stat label="Accuracy" value={stats.attempts > 0 ? pct(stats.accuracy) : '—'} />
         </div>
       </Card>
 

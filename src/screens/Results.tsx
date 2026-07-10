@@ -2,14 +2,14 @@ import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../game/useGameStore';
 import { tierFor } from '../benchmark/tiers';
-import { TierBadge, TierLadder } from '../components/TierBadge';
+import { TierBadge, TierLadder, NewBestPill } from '../components/TierBadge';
 import { Button, Card, Stat } from '../components/ui';
 import { OP_LABEL, type Operation } from '../engine/types';
 import { median } from '../analytics/aggregate';
 import { formatMs } from '../lib/format';
 import { DistributionChart } from '../components/charts';
 import { ordinal, percentileFor } from '../benchmark/distribution';
-import { useAdaptivePlan } from '../data/hooks';
+import { useAdaptivePlan, useSessions } from '../data/hooks';
 import { makeAdaptiveSelector } from '../analytics/adaptive';
 import { pct } from '../lib/format';
 
@@ -22,10 +22,21 @@ export default function Results() {
   const mode = useGameStore((s) => s.mode);
   const weights = useGameStore((s) => s.weights);
   const focus = useGameStore((s) => s.focus);
+  const sessionId = useGameStore((s) => s.sessionId);
   const start = useGameStore((s) => s.start);
   // Live plan — recomputes once this session's attempts land in Dexie, so it
   // already reflects the run you just finished.
   const plan = useAdaptivePlan();
+  const sessions = useSessions() ?? [];
+
+  // New personal best: beats every prior run of the same mode + duration.
+  const priorBest = sessions
+    .filter((s) => s.id !== sessionId && s.mode === mode && s.durationSec === config.durationSec)
+    .reduce((m, s) => Math.max(m, s.score), 0);
+  const priorCount = sessions.filter(
+    (s) => s.id !== sessionId && s.mode === mode && s.durationSec === config.durationSec,
+  ).length;
+  const isNewBest = score > 0 && priorCount > 0 && score > priorBest;
 
   const tier = tierFor(score);
 
@@ -77,7 +88,14 @@ export default function Results() {
     <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col gap-4 px-4 pt-safe pb-safe">
       <div className="pt-6 text-center">
         <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">Final Score</div>
-        <div className="text-7xl font-black tabular-nums text-brand">{score}</div>
+        <div className="flex items-center justify-center gap-3">
+          <span className="text-7xl font-black tabular-nums text-brand">{score}</span>
+        </div>
+        {isNewBest && (
+          <div className="mt-2 flex justify-center">
+            <NewBestPill />
+          </div>
+        )}
         <div className="mt-2 flex justify-center">
           <TierBadge tier={tier} large />
         </div>
