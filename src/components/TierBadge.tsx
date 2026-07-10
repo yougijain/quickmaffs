@@ -1,12 +1,36 @@
 import { TIERS, nextTier, tierFor, type Tier } from '../benchmark/tiers';
 
-const COLOR: Record<string, { text: string; bar: string }> = {
-  slate: { text: 'text-slate-300', bar: 'bg-slate-500' },
-  sky: { text: 'text-sky-300', bar: 'bg-sky-400' },
-  emerald: { text: 'text-brand', bar: 'bg-brand' },
-  violet: { text: 'text-violet-300', bar: 'bg-violet-400' },
-  amber: { text: 'text-gold', bar: 'bg-gold' },
+const COLOR: Record<string, { text: string; bar: string; border: string }> = {
+  slate: { text: 'text-slate-300', bar: 'bg-slate-500', border: 'border-slate-500/40' },
+  sky: { text: 'text-sky-300', bar: 'bg-sky-400', border: 'border-sky-400/40' },
+  emerald: { text: 'text-brand', bar: 'bg-brand', border: 'border-brand/40' },
+  violet: { text: 'text-violet-300', bar: 'bg-violet-400', border: 'border-violet-400/40' },
+  amber: { text: 'text-gold', bar: 'bg-gold', border: 'border-gold/40' },
 };
+
+/** Rank symbol (D → S) for a score's tier. Rank tracks your TOP score. */
+export function RankBadge({ score, size = 'md' }: { score: number; size?: 'sm' | 'md' | 'lg' }) {
+  const tier = tierFor(score);
+  const c = COLOR[tier.color] ?? COLOR.slate;
+  const dim = size === 'lg' ? 'h-11 w-11 text-2xl' : size === 'sm' ? 'h-6 w-6 text-xs' : 'h-8 w-8 text-base';
+  return (
+    <span
+      title={`Rank ${tier.rank} · ${tier.label}`}
+      className={`inline-flex items-center justify-center rounded-xl border ${c.border} bg-ink-800/70 font-black tabular-nums ${c.text} ${dim}`}
+    >
+      {tier.rank}
+    </span>
+  );
+}
+
+/** Small "new personal best" pill. */
+export function NewBestPill() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-xs font-semibold text-gold">
+      ▲ Personal best
+    </span>
+  );
+}
 
 export function TierBadge({ tier, large }: { tier: Tier; large?: boolean }) {
   const c = COLOR[tier.color] ?? COLOR.slate;

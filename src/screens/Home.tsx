@@ -1,18 +1,21 @@
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../game/useGameStore';
-import { useAdaptivePlan, useBestScore, useSettings } from '../data/hooks';
+import { useAdaptivePlan, useBenchmarkStats, useSettings } from '../data/hooks';
 import { makeAdaptiveSelector } from '../analytics/adaptive';
 import { DEFAULT_CONFIG, cloneConfig } from '../engine/config';
-import { tierFor } from '../benchmark/tiers';
-import { TierBadge, TierLadder, GoalProgress } from '../components/TierBadge';
+import { TIERS, tierFor } from '../benchmark/tiers';
+import { TierBadge, TierLadder, GoalProgress, RankBadge } from '../components/TierBadge';
 import { Button, Card, Eyebrow } from '../components/ui';
 import { useAuth } from '../auth/AuthProvider';
+
+const INTERVIEW_READY = TIERS.find((t) => t.key === 'inter')!.min; // 40
 
 export default function Home() {
   const navigate = useNavigate();
   const settings = useSettings();
   const plan = useAdaptivePlan();
-  const best = useBestScore() ?? 0;
+  const bench = useBenchmarkStats() ?? { best: 0, average: 0, count: 0 };
+  const best = bench.best;
   const start = useGameStore((s) => s.start);
   const { cloudEnabled, isAnonymous } = useAuth();
 
@@ -52,10 +55,30 @@ export default function Home() {
         <div className="flex items-end justify-between">
           <div>
             <Eyebrow>Benchmark best</Eyebrow>
-            <div className="mt-1 text-[64px] font-bold leading-none tabular-nums text-brand">{best}</div>
+            <div className="mt-1 flex items-center gap-3">
+              <span className="text-[64px] font-bold leading-none tabular-nums text-brand">{best}</span>
+              {/* Rank tracks your TOP score. */}
+              <RankBadge score={best} size="lg" />
+            </div>
           </div>
           <div className="mb-1 text-right text-xs text-faint">120s · Zetamac rules</div>
         </div>
+
+        {/* Average = consistency. This is what must clear interview-ready. */}
+        {bench.count > 0 && (
+          <div className="mt-3 flex items-baseline gap-2 text-sm">
+            <span className="text-muted">
+              Average <span className="font-semibold tabular-nums text-fg">{bench.average}</span>
+              <span className="text-faint"> · {bench.count} run{bench.count === 1 ? '' : 's'}</span>
+            </span>
+            <span className={`ml-auto text-xs ${bench.average >= INTERVIEW_READY ? 'text-brand' : 'text-faint'}`}>
+              {bench.average >= INTERVIEW_READY
+                ? 'consistently interview-ready'
+                : `${INTERVIEW_READY - bench.average} to interview-ready avg`}
+            </span>
+          </div>
+        )}
+
         <div className="mt-6">
           <TierLadder score={best} />
         </div>
