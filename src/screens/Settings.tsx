@@ -104,33 +104,36 @@ export default function Settings() {
         </label>
       </Card>
 
-      {(['add', 'sub', 'mul', 'div'] as Operation[]).map((op) => (
-        <Card key={op}>
-          <label className="flex items-center justify-between">
-            <span className="font-semibold">{OP_LABEL[op]}</span>
-            <input
-              type="checkbox"
-              className="h-6 w-6 accent-brand"
-              checked={config.ops[op].enabled}
-              onChange={(e) => update((c) => (c.ops[op].enabled = e.target.checked))}
-            />
-          </label>
-          {config.ops[op].enabled && (
-            <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-              <RangeRow
-                label={op === 'mul' || op === 'div' ? 'Factor A' : 'Term A'}
-                range={config.ops[op].a}
-                onChange={(r) => update((c) => (c.ops[op].a = r))}
+      {(['add', 'sub', 'mul', 'div'] as Operation[]).map((op) => {
+        const isFactor = op === 'mul' || op === 'div';
+        return (
+          <Card key={op}>
+            <label className="flex cursor-pointer items-center justify-between">
+              <span className="font-semibold">{OP_LABEL[op]}</span>
+              <input
+                type="checkbox"
+                className="h-6 w-6 accent-brand"
+                checked={config.ops[op].enabled}
+                onChange={(e) => update((c) => (c.ops[op].enabled = e.target.checked))}
               />
-              <RangeRow
-                label={op === 'mul' || op === 'div' ? 'Factor B' : 'Term B'}
-                range={config.ops[op].b}
-                onChange={(r) => update((c) => (c.ops[op].b = r))}
-              />
-            </div>
-          )}
-        </Card>
-      ))}
+            </label>
+            {config.ops[op].enabled && (
+              <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4">
+                <RangeRow
+                  label={isFactor ? 'Factor A' : '1st term'}
+                  range={config.ops[op].a}
+                  onChange={(r) => update((c) => (c.ops[op].a = r))}
+                />
+                <RangeRow
+                  label={isFactor ? 'Factor B' : '2nd term'}
+                  range={config.ops[op].b}
+                  onChange={(r) => update((c) => (c.ops[op].b = r))}
+                />
+              </div>
+            )}
+          </Card>
+        );
+      })}
 
       {error && <p className="text-sm text-red-400">{error}</p>}
       {saved && <p className="text-sm text-brand">Saved ✓</p>}
@@ -173,14 +176,22 @@ export default function Settings() {
   );
 }
 
-function NumberInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+function NumberInput({
+  value,
+  onChange,
+  className = 'w-20 text-right',
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  className?: string;
+}) {
   return (
     <input
       type="number"
       inputMode="numeric"
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="w-20 rounded-lg border border-ink-700 bg-ink-900 px-2 py-1 text-right tabular-nums"
+      className={`rounded-lg border border-line bg-ink-900 px-2 py-1.5 tabular-nums focus:border-brand focus:outline-none ${className}`}
     />
   );
 }
@@ -195,12 +206,20 @@ function RangeRow({
   onChange: (r: { min: number; max: number }) => void;
 }) {
   return (
-    <div>
-      <div className="mb-1 text-xs text-muted">{label}</div>
-      <div className="flex items-center gap-1">
-        <NumberInput value={range.min} onChange={(v) => onChange({ ...range, min: v })} />
-        <span className="text-faint">–</span>
-        <NumberInput value={range.max} onChange={(v) => onChange({ ...range, max: v })} />
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-sm text-muted">{label}</span>
+      <div className="flex items-center gap-2">
+        <NumberInput
+          className="w-16 text-center"
+          value={range.min}
+          onChange={(v) => onChange({ ...range, min: v })}
+        />
+        <span className="text-xs text-faint">to</span>
+        <NumberInput
+          className="w-16 text-center"
+          value={range.max}
+          onChange={(v) => onChange({ ...range, max: v })}
+        />
       </div>
     </div>
   );
