@@ -24,3 +24,6 @@ xcuserdata/
 # Logs
 *.log
 npm-debug.log*
+
+# TypeScript incremental build cache (regenerated every build; churns constantly)
+*.tsbuildinfo
