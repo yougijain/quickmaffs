@@ -112,15 +112,15 @@ export default function Home() {
         </Button>
       </div>
 
-      <button
-        onClick={() => navigate('/account')}
-        className="flex items-center justify-between rounded-card border border-line bg-ink-900/40 px-5 py-3.5 text-left"
-      >
-        <span className="text-sm text-muted">
-          {cloudEnabled && isAnonymous ? 'Back up your progress' : 'Account & history'}
-        </span>
-        <span className="text-sm font-medium text-brand">→</span>
-      </button>
+      {cloudEnabled && isAnonymous && (
+        <button
+          onClick={() => navigate('/analytics')}
+          className="flex items-center justify-between rounded-card border border-line bg-ink-900/40 px-5 py-3.5 text-left"
+        >
+          <span className="text-sm text-muted">Back up your progress</span>
+          <span className="text-sm font-medium text-brand">→</span>
+        </button>
+      )}
     </div>
   );
 }

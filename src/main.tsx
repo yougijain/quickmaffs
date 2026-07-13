@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { RouterProvider, createHashRouter } from 'react-router-dom';
+import { Navigate, RouterProvider, createHashRouter } from 'react-router-dom';
 import './index.css';
 import App from './App';
 import Home from './screens/Home';
@@ -9,7 +9,6 @@ import Results from './screens/Results';
 import Analytics from './screens/Analytics';
 import Drills from './screens/Drills';
 import Settings from './screens/Settings';
-import Account from './screens/Account';
 import { AuthProvider } from './auth/AuthProvider';
 import { getSettings } from './data/repo';
 
@@ -26,7 +25,9 @@ const router = createHashRouter([
       { path: 'analytics', element: <Analytics /> },
       { path: 'drills', element: <Drills /> },
       { path: 'settings', element: <Settings /> },
-      { path: 'account', element: <Account /> },
+      // Account content merged into Stats; keep the old path working for any
+      // stale bookmarks / cached home-screen shortcuts.
+      { path: 'account', element: <Navigate to="/analytics" replace /> },
     ],
   },
   // Game + Results render full-screen (no tab bar), outside the App shell.

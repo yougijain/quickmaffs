@@ -165,9 +165,9 @@ export default function Settings() {
             <Button
               variant="ghost"
               className="min-h-0 px-3 py-1 text-sm"
-              onClick={() => navigate('/account')}
+              onClick={() => navigate('/analytics')}
             >
-              View →
+              View in Stats →
             </Button>
           </div>
         )}
