@@ -1,9 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type SettingsRow } from './db';
 import { DEFAULT_CONFIG, DEFAULT_GOAL_SCORE, cloneConfig } from '../engine/config';
-import { aggregate, globalMedianMs } from '../analytics/aggregate';
-import { rankWeaknesses } from '../analytics/weakness';
+import { aggregate, globalMedianMs, median } from '../analytics/aggregate';
+import { MIN_SAMPLES, rankWeaknesses } from '../analytics/weakness';
 import { buildAdaptivePlan, type AdaptivePlan } from '../analytics/adaptive';
+import type { Operation } from '../engine/types';
 
 const DEFAULT_SETTINGS: SettingsRow = {
   id: 'local',
@@ -70,4 +71,53 @@ export function useWeaknesses(limit = 5) {
     const g = globalMedianMs(attempts);
     return { ranked: rankWeaknesses(stats, g, limit), stats, globalMedianMs: g, total: attempts.length };
   }, [limit]);
+}
+
+export interface OpStat {
+  n: number;
+  medianMs: number;
+  errorRate: number;
+  /** Simple 0+ weakness signal: relative slowness vs. your own overall pace,
+   *  plus error rate. Not intrinsic-difficulty-normalized — this is a plain
+   *  "which of MY ops takes longest" comparison, deliberately simple. */
+  level: 'neutral' | 'calm' | 'warn' | 'weak';
+}
+
+/**
+ * Per-operation timing/error rollup across all logged attempts, plus your
+ * overall median pace (used as the "Pace" stat — a much steadier signal than
+ * accuracy, since auto-advance means almost every attempt is "correct" and
+ * only the buzzer-caught problem ever isn't).
+ */
+export function useOpStats() {
+  return useLiveQuery(async () => {
+    const attempts = await db.attempts.toArray();
+    const byOp: Partial<Record<Operation, { correctTimes: number[]; n: number; errors: number }>> = {};
+    const allCorrectTimes: number[] = [];
+    for (const a of attempts) {
+      const b = (byOp[a.op] ??= { correctTimes: [], n: 0, errors: 0 });
+      b.n++;
+      if (a.correct) {
+        b.correctTimes.push(a.timeMs);
+        allCorrectTimes.push(a.timeMs);
+      } else {
+        b.errors++;
+      }
+    }
+    const overallMedianMs = median(allCorrectTimes);
+    const ops: Partial<Record<Operation, OpStat>> = {};
+    for (const op of Object.keys(byOp) as Operation[]) {
+      const b = byOp[op]!;
+      const medianMsOp = median(b.correctTimes);
+      const errorRate = b.n ? b.errors / b.n : 0;
+      let level: OpStat['level'] = 'neutral';
+      if (b.n >= MIN_SAMPLES) {
+        const slowPenalty = overallMedianMs > 0 ? Math.max(0, medianMsOp / overallMedianMs - 1) : 0;
+        const score = slowPenalty + errorRate * 2;
+        level = score > 0.4 || errorRate > 0.15 ? 'weak' : score > 0.15 ? 'warn' : 'calm';
+      }
+      ops[op] = { n: b.n, medianMs: medianMsOp, errorRate, level };
+    }
+    return { ops, overallMedianMs };
+  }, []);
 }

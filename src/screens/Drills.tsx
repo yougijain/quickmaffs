@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../game/useGameStore';
-import { useAdaptivePlan, useSettings } from '../data/hooks';
+import { useAdaptivePlan, useOpStats, useSettings, type OpStat } from '../data/hooks';
 import { makeAdaptiveSelector } from '../analytics/adaptive';
 import { buildFocusDrill } from '../analytics/drills';
 import { cloneConfig } from '../engine/config';
@@ -8,10 +8,25 @@ import { Button, Card } from '../components/ui';
 import { OP_LABEL, type Operation } from '../engine/types';
 import { pct } from '../lib/format';
 
+const LEVEL_STYLE: Record<OpStat['level'], string> = {
+  neutral: 'border-line bg-ink-900 text-fg',
+  calm: 'border-brand/30 bg-brand/10 text-fg',
+  warn: 'border-gold/40 bg-gold/10 text-fg',
+  weak: 'border-red-400/40 bg-red-400/10 text-fg',
+};
+
+const LEVEL_DOT: Record<OpStat['level'], string> = {
+  neutral: 'bg-faint',
+  calm: 'bg-brand',
+  warn: 'bg-gold',
+  weak: 'bg-red-400',
+};
+
 export default function Drills() {
   const navigate = useNavigate();
   const settings = useSettings();
   const plan = useAdaptivePlan();
+  const opStats = useOpStats();
   const start = useGameStore((s) => s.start);
 
   const startAdaptive = () => {
@@ -77,6 +92,36 @@ export default function Drills() {
         </Button>
       </Card>
 
+      <Card>
+        <h2 className="font-semibold">Single operation</h2>
+        <p className="mt-1 text-sm text-muted">Drill one operation at a time using your current ranges.</p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {(['add', 'sub', 'mul', 'div'] as Operation[]).map((op) => {
+            const level = opStats?.ops[op]?.level ?? 'neutral';
+            return (
+              <button
+                key={op}
+                onClick={() => startSingleOp(op)}
+                className={`flex min-h-[3.25rem] items-center justify-center rounded-2xl border text-[15px] font-medium tracking-tight transition-all duration-150 active:scale-[0.98] ${LEVEL_STYLE[level]}`}
+              >
+                {OP_LABEL[op]}
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-3 flex items-center gap-4 text-xs text-faint">
+          <span className="flex items-center gap-1.5">
+            <span className={`h-2 w-2 rounded-full ${LEVEL_DOT.calm}`} /> On pace
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className={`h-2 w-2 rounded-full ${LEVEL_DOT.warn}`} /> Slower
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className={`h-2 w-2 rounded-full ${LEVEL_DOT.weak}`} /> Weakest
+          </span>
+        </div>
+      </Card>
+
       {hasSignal && (
         <Card>
           <h2 className="font-semibold">Focus one weak spot</h2>
@@ -97,18 +142,6 @@ export default function Drills() {
           </div>
         </Card>
       )}
-
-      <Card>
-        <h2 className="font-semibold">Single operation</h2>
-        <p className="mt-1 text-sm text-muted">Drill one operation at a time using your current ranges.</p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {(['add', 'sub', 'mul', 'div'] as Operation[]).map((op) => (
-            <Button key={op} variant="secondary" onClick={() => startSingleOp(op)}>
-              {OP_LABEL[op]}
-            </Button>
-          ))}
-        </div>
-      </Card>
 
       <Card className="flex items-center justify-between">
         <div>
