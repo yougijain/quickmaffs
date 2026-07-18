@@ -12,6 +12,7 @@ import { DistributionChart, ScoreHistoryChart } from '../components/charts';
 import { ordinal, percentileFor } from '../benchmark/distribution';
 import { tierFor } from '../benchmark/tiers';
 import type { SessionMode } from '../engine/types';
+import type { SessionRow } from '../data/db';
 
 const MODE_LABEL: Record<SessionMode, string> = {
   classic: 'Benchmark',
@@ -27,23 +28,38 @@ function formatDuration(ms: number): string {
   return `${h}h ${min % 60}m`;
 }
 
-/** Calm practice-activity grid: last 12 weeks, shaded by problems solved/day. */
-function ActivityGrid({ byDay }: { byDay: Map<string, number> }) {
-  const days = 7 * 12;
+const dayKey = (t: number) => new Date(t).toISOString().slice(0, 10);
+const solvedOn = (rows: SessionRow[]) => rows.reduce((s, r) => s + (r.correct ?? r.score ?? 0), 0);
+
+function formatDayLabel(key: string): string {
+  return new Date(key + 'T00:00:00').toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+/**
+ * Calm practice-activity grid: last 12 weeks, shaded by problems solved/day.
+ * Tap a cell to see what you did that day.
+ */
+function ActivityGrid({ byDay }: { byDay: Map<string, SessionRow[]> }) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const numDays = 7 * 12;
   const today = new Date();
   const start = new Date(today);
-  start.setDate(start.getDate() - (days - 1));
-  // align to the start of that week (Sunday)
-  start.setDate(start.getDate() - start.getDay());
+  start.setDate(start.getDate() - (numDays - 1));
+  start.setDate(start.getDate() - start.getDay()); // align to Sunday
 
-  const cells: { key: string; count: number }[] = [];
+  const cells: { key: string; solved: number }[] = [];
   const cursor = new Date(start);
   while (cursor <= today) {
     const key = cursor.toISOString().slice(0, 10);
-    cells.push({ key, count: byDay.get(key) ?? 0 });
+    cells.push({ key, solved: solvedOn(byDay.get(key) ?? []) });
     cursor.setDate(cursor.getDate() + 1);
   }
-  const max = Math.max(4, ...cells.map((c) => c.count));
+  const max = Math.max(4, ...cells.map((c) => c.solved));
   const shade = (c: number) => {
     if (c === 0) return 'bg-ink-800';
     const r = c / max;
@@ -52,15 +68,63 @@ function ActivityGrid({ byDay }: { byDay: Map<string, number> }) {
     return 'bg-brand/30';
   };
 
+  const selRuns = selected ? (byDay.get(selected) ?? []).slice().sort((a, b) => b.startedAt - a.startedAt) : [];
+
   return (
-    <div className="grid grid-flow-col grid-rows-7 gap-1" style={{ gridAutoColumns: '1fr' }}>
-      {cells.map((c) => (
-        <div
-          key={c.key}
-          className={`aspect-square w-full rounded-[3px] ${shade(c.count)}`}
-          title={`${c.key}: ${c.count}`}
-        />
-      ))}
+    <div>
+      <div className="grid grid-flow-col grid-rows-7 gap-1" style={{ gridAutoColumns: '1fr' }}>
+        {cells.map((c) => {
+          const active = selected === c.key;
+          return (
+            <button
+              key={c.key}
+              onClick={() => setSelected(active ? null : c.key)}
+              className={`aspect-square w-full rounded-[3px] ${shade(c.solved)} ${
+                active ? 'ring-2 ring-fg ring-offset-1 ring-offset-ink-900' : ''
+              }`}
+              aria-label={`${c.key}: ${c.solved} solved`}
+            />
+          );
+        })}
+      </div>
+
+      {selected && (
+        <div className="mt-3 rounded-xl border border-line bg-ink-900/60 p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-fg">{formatDayLabel(selected)}</span>
+            <button onClick={() => setSelected(null)} className="px-1 text-sm text-faint hover:text-fg">
+              ✕
+            </button>
+          </div>
+          {selRuns.length === 0 ? (
+            <p className="mt-1 text-xs text-faint">No practice this day.</p>
+          ) : (
+            <>
+              <p className="mt-1 text-xs text-muted">
+                {selRuns.length} run{selRuns.length === 1 ? '' : 's'} ·{' '}
+                <span className="text-fg">{solvedOn(selRuns)}</span> solved · best{' '}
+                <span className="text-gold">{Math.max(...selRuns.map((r) => r.score))}</span>
+              </p>
+              <div className="mt-2 flex flex-col divide-y divide-line">
+                {selRuns.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between py-1.5 text-sm">
+                    <span className="text-muted">
+                      {MODE_LABEL[r.mode] ?? r.mode}
+                      <span className="text-faint"> · {r.durationSec}s</span>
+                    </span>
+                    <span className="flex items-center gap-3">
+                      {r.totalAttempts ? (
+                        <span className="text-xs tabular-nums text-faint">{pct(r.accuracy ?? 0)}</span>
+                      ) : null}
+                      <span className="font-bold tabular-nums text-brand">{r.score}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -96,13 +160,15 @@ export default function Analytics() {
     let problems = 0;
     let attempts = 0;
     let timeMs = 0;
-    const byDay = new Map<string, number>();
+    const byDay = new Map<string, SessionRow[]>();
     for (const s of sessions) {
       problems += s.correct ?? s.score ?? 0;
       attempts += s.totalAttempts ?? 0;
       timeMs += s.endedAt && s.startedAt ? s.endedAt - s.startedAt : (s.durationSec ?? 0) * 1000;
-      const day = new Date(s.startedAt).toISOString().slice(0, 10);
-      byDay.set(day, (byDay.get(day) ?? 0) + (s.correct ?? s.score ?? 0));
+      const day = dayKey(s.startedAt);
+      const arr = byDay.get(day) ?? [];
+      arr.push(s);
+      byDay.set(day, arr);
     }
     const bestClassic = classicRuns.reduce((m, s) => Math.max(m, s.score), 0);
     const avgClassic = classicRuns.length
