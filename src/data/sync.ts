@@ -307,6 +307,21 @@ export async function markAllUnsynced(): Promise<void> {
   });
 }
 
+/**
+ * Delete a session (and its attempts, via FK cascade) from the cloud. Used
+ * when discarding an interrupted run. Best-effort; RLS scopes it to the owner.
+ */
+export async function deleteRemoteSession(id: string): Promise<void> {
+  if (!supabase || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
+  const userId = await currentUserId();
+  if (!userId) return;
+  try {
+    await supabase.from('sessions').delete().eq('id', id).eq('user_id', userId);
+  } catch {
+    // best-effort; the local copy is already gone
+  }
+}
+
 /** Fire-and-forget; safe to call after every session finish. */
 export function triggerSync(): void {
   void pushPending();

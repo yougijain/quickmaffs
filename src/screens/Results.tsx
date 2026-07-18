@@ -12,6 +12,8 @@ import { ordinal, percentileFor } from '../benchmark/distribution';
 import { useAdaptivePlan, useSessions } from '../data/hooks';
 import { makeAdaptiveSelector } from '../analytics/adaptive';
 import { pct } from '../lib/format';
+import { deleteSession } from '../data/repo';
+import { deleteRemoteSession } from '../data/sync';
 
 export default function Results() {
   const navigate = useNavigate();
@@ -24,6 +26,7 @@ export default function Results() {
   const focus = useGameStore((s) => s.focus);
   const sessionId = useGameStore((s) => s.sessionId);
   const start = useGameStore((s) => s.start);
+  const reset = useGameStore((s) => s.reset);
   // Live plan — recomputes once this session's attempts land in Dexie, so it
   // already reflects the run you just finished.
   const plan = useAdaptivePlan();
@@ -72,6 +75,17 @@ export default function Results() {
       start(config, { mode, weights, focus });
     }
     navigate('/game', { replace: true });
+  };
+
+  // Discard an interrupted/fluke run so it doesn't pollute your stats. The
+  // session was already saved on finish, so this removes it locally + in cloud.
+  const discardRun = async () => {
+    if (!window.confirm('Discard this run? It won’t count toward your stats or history.')) return;
+    const id = sessionId;
+    reset();
+    await deleteSession(id);
+    void deleteRemoteSession(id);
+    navigate('/', { replace: true });
   };
 
   const nextTargets = plan?.targets.slice(0, 3) ?? [];
@@ -176,6 +190,13 @@ export default function Results() {
             Home
           </Button>
         </div>
+        {/* Interrupted or fluke run? Drop it so it doesn't skew your stats. */}
+        <button
+          onClick={discardRun}
+          className="mt-1 py-2 text-center text-sm text-faint transition-colors hover:text-red-300"
+        >
+          Discard this run — don’t save it
+        </button>
       </div>
     </div>
   );
