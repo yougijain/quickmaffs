@@ -76,3 +76,55 @@
     border-color: theme('colors.line');
   }
 }
+
+/* One-shot confetti burst — particles fly outward from the origin and fade.
+   Custom props (--dx/--dy/--rot) are set per-piece in Confetti.tsx. */
+@keyframes confetti-burst {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(0.5);
+    opacity: 0;
+  }
+}
+
+.confetti-piece {
+  left: 0;
+  top: 0;
+  animation: confetti-burst 900ms cubic-bezier(0.15, 0.6, 0.35, 1) forwards;
+}
+
+/* Gentle pop the pill uses when a new personal best lands. */
+@keyframes pb-pop {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.pb-pop {
+  animation: pb-pop 520ms cubic-bezier(0.2, 0.8, 0.3, 1.2) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti-piece,
+  .pb-pop {
+    animation: none;
+  }
+  .confetti-piece {
+    opacity: 0;
+  }
+}

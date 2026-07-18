@@ -14,6 +14,7 @@ import { makeAdaptiveSelector } from '../analytics/adaptive';
 import { pct } from '../lib/format';
 import { deleteSession } from '../data/repo';
 import { deleteRemoteSession } from '../data/sync';
+import { Confetti } from '../components/Confetti';
 
 export default function Results() {
   const navigate = useNavigate();
@@ -106,8 +107,11 @@ export default function Results() {
           <span className="text-7xl font-black tabular-nums text-brand">{score}</span>
         </div>
         {isNewBest && (
-          <div className="mt-2 flex justify-center">
-            <NewBestPill />
+          <div className="relative mt-2 flex justify-center">
+            <Confetti />
+            <span className="pb-pop relative z-10">
+              <NewBestPill />
+            </span>
           </div>
         )}
         <div className="mt-2 flex justify-center">
@@ -191,12 +195,14 @@ export default function Results() {
           </Button>
         </div>
         {/* Interrupted or fluke run? Drop it so it doesn't skew your stats. */}
-        <button
-          onClick={discardRun}
-          className="mt-1 py-2 text-center text-sm text-faint transition-colors hover:text-red-300"
-        >
-          Discard this run — don’t save it
-        </button>
+        <div className="mt-1 flex justify-center">
+          <button
+            onClick={discardRun}
+            className="rounded-full border border-red-500/40 bg-red-500/10 px-5 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/20 active:scale-95"
+          >
+            Discard this run
+          </button>
+        </div>
       </div>
     </div>
   );
