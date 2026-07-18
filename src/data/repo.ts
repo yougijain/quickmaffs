@@ -16,6 +16,14 @@ export async function saveSession(
   });
 }
 
+/** Remove a session and its attempts locally (e.g. an interrupted run). */
+export async function deleteSession(id: string): Promise<void> {
+  await db.transaction('rw', db.sessions, db.attempts, async () => {
+    await db.attempts.where('sessionId').equals(id).delete();
+    await db.sessions.delete(id);
+  });
+}
+
 export async function getAllAttempts(): Promise<AttemptRow[]> {
   return db.attempts.toArray();
 }
