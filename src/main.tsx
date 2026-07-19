@@ -11,9 +11,13 @@ import Drills from './screens/Drills';
 import Settings from './screens/Settings';
 import { AuthProvider } from './auth/AuthProvider';
 import { getSettings } from './data/repo';
+import { initNative } from './lib/native';
 
 // Seed the local settings row once, before any liveQuery observes it.
 void getSettings();
+
+// Theme the native status bar + dismiss the launch splash (no-op on web).
+void initNative();
 
 // Hash router: safest for Capacitor's file:// origin (no server-side routing).
 const router = createHashRouter([

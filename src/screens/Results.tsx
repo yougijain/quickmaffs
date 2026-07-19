@@ -15,6 +15,7 @@ import { pct } from '../lib/format';
 import { deleteSession } from '../data/repo';
 import { deleteRemoteSession } from '../data/sync';
 import { Confetti } from '../components/Confetti';
+import { celebrate } from '../lib/haptics';
 
 export default function Results() {
   const navigate = useNavigate();
@@ -96,6 +97,11 @@ export default function Results() {
   useEffect(() => {
     if (status === 'idle') navigate('/', { replace: true });
   }, [status, navigate]);
+
+  // Celebratory haptic to pair with the confetti burst on a new personal best.
+  useEffect(() => {
+    if (isNewBest) celebrate();
+  }, [isNewBest]);
 
   if (status === 'idle') return null;
 
