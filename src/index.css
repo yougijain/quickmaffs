@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-ink-950 text-fg antialiased;
+    font-family: theme('fontFamily.sans');
+    margin: 0;
+    min-height: 100dvh;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* Subtle top glow so the canvas has depth without clutter. */
+    background-image: radial-gradient(120% 80% at 50% -10%, rgba(61, 220, 151, 0.06), transparent 60%);
+    background-attachment: fixed;
+  }
+
+  /* Numbers read as tabular for a precise, fintech feel. */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  ::selection {
+    background: rgba(61, 220, 151, 0.25);
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
+  }
+
+  button,
+  a,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+
+  input {
+    font-family: inherit;
+  }
+}
+
+@layer utilities {
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* Hairline top divider used by the nav / sticky bars. */
+  .divide-hairline {
+    border-color: theme('colors.line');
+  }
+}
+
+/* One-shot confetti burst — particles fly outward from the origin and fade.
+   Custom props (--dx/--dy/--rot) are set per-piece in Confetti.tsx. */
+@keyframes confetti-burst {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--rot)) scale(0.5);
+    opacity: 0;
+  }
+}
+
+.confetti-piece {
+  left: 0;
+  top: 0;
+  animation: confetti-burst 900ms cubic-bezier(0.15, 0.6, 0.35, 1) forwards;
+}
+
+/* Gentle pop the pill uses when a new personal best lands. */
+@keyframes pb-pop {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.pb-pop {
+  animation: pb-pop 520ms cubic-bezier(0.2, 0.8, 0.3, 1.2) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti-piece,
+  .pb-pop {
+    animation: none;
+  }
+  .confetti-piece {
+    opacity: 0;
+  }
+}
