@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>QuickMaffs — Privacy Policy</title>
+    <meta name="theme-color" content="#080A09" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #080a09;
+        color: #e9ecea;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap { max-width: 720px; margin: 0 auto; padding: 48px 22px 96px; }
+      h1 { font-size: 1.7rem; letter-spacing: -0.02em; margin: 0 0 4px; }
+      h2 { font-size: 1.08rem; margin: 34px 0 8px; color: #3ddc97; letter-spacing: -0.01em; }
+      p, li { color: #c7cdc9; }
+      a { color: #6fe8b4; }
+      .muted { color: #8c948f; font-size: 0.9rem; }
+      ul { padding-left: 1.15rem; }
+      li { margin: 4px 0; }
+      code { background: #161b19; padding: 1px 6px; border-radius: 6px; font-size: 0.86em; }
+      hr { border: none; border-top: 1px solid #232a26; margin: 28px 0; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>QuickMaffs — Privacy Policy</h1>
+      <p class="muted">Last updated: 21 July 2026</p>
+
+      <p>
+        QuickMaffs is a mental-math practice app. It is designed to work fully offline and to keep as little
+        data as possible. This policy explains what the app stores, why, and the choices you have.
+      </p>
+
+      <h2>The short version</h2>
+      <ul>
+        <li>You can use the entire app <strong>without an account</strong>. Your data stays on your device.</li>
+        <li>If you create an account, your practice history syncs to our database so you can restore it on another device.</li>
+        <li>We do <strong>not</strong> show ads, do <strong>not</strong> use third-party analytics or trackers, and do <strong>not</strong> sell or share your data.</li>
+      </ul>
+
+      <h2>What we store</h2>
+      <p><strong>Account information (only if you create one):</strong></p>
+      <ul>
+        <li>Email address and password, used solely to sign you in and sync your data. By default the app uses an anonymous account with no email.</li>
+      </ul>
+      <p><strong>Your practice data:</strong></p>
+      <ul>
+        <li>Session results — score, mode, duration, start/end time, and summary accuracy/timing.</li>
+        <li>Per-problem records — the arithmetic problem shown, your answer, whether it was correct, how long it took, and edits made — used to compute your benchmarks and find your weak spots.</li>
+        <li>Your settings and practice goals.</li>
+      </ul>
+      <p><strong>Basic technical context</strong> attached to each session, to help the app work and improve:</p>
+      <ul>
+        <li>App version, platform, browser/user-agent string, time zone, and the local hour of play.</li>
+      </ul>
+
+      <h2>How your data is stored</h2>
+      <ul>
+        <li><strong>On your device</strong> first, in local storage — this is why the app works offline.</li>
+        <li><strong>In the cloud</strong> (our hosted Supabase/Postgres database) only when you are signed in and online. Access is restricted by row-level security so an account can read and write <em>only its own</em> rows.</li>
+      </ul>
+
+      <h2>How we use it</h2>
+      <ul>
+        <li>To run the app: track your scores, benchmarks, and progress over time.</li>
+        <li>To sync your history across your devices and restore it after reinstalling.</li>
+        <li>That's it. We do not use your data for advertising, profiling for third parties, or tracking you across other apps or websites.</li>
+      </ul>
+
+      <h2>Your choices &amp; deleting data</h2>
+      <ul>
+        <li><strong>Discard a run</strong> — on the results screen you can discard a session so it is removed from your stats and history, locally and in the cloud.</li>
+        <li><strong>Delete your account and data</strong> — you can delete your account from within the app, which permanently removes your sessions, attempts, and settings from our database. You may also email us to request deletion.</li>
+        <li><strong>Use without syncing</strong> — simply don't create an email account; nothing leaves your device beyond the anonymous sync used to back up your own history.</li>
+      </ul>
+
+      <h2>Children</h2>
+      <p>
+        QuickMaffs is rated for all ages and is not directed at children under 13. It does not knowingly collect
+        personal information from children beyond the optional account email you choose to provide.
+      </p>
+
+      <h2>Changes</h2>
+      <p>If this policy changes, we'll update the date above and post the new version at this address.</p>
+
+      <hr />
+      <h2>Contact</h2>
+      <p>
+        Questions or deletion requests: <a href="mailto:yougijain@gmail.com">yougijain@gmail.com</a>
+      </p>
+    </div>
+  </body>
+</html>
