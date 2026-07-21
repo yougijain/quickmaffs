@@ -322,6 +322,24 @@ export async function deleteRemoteSession(id: string): Promise<void> {
   }
 }
 
+/**
+ * Permanently delete the signed-in account: its cloud data + auth user (via the
+ * `delete-account` Edge Function, which runs with the service role), then wipe
+ * every local table so nothing lingers on this device. Returns null on success
+ * or an error message. Required for App Store account-deletion compliance.
+ */
+export async function deleteAccountData(): Promise<string | null> {
+  if (!supabase) return 'Cloud sync is not configured.';
+  const { error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
+  if (error) return error.message || 'Could not delete your account. Please try again.';
+  await db.transaction('rw', db.sessions, db.attempts, db.settings, async () => {
+    await db.sessions.clear();
+    await db.attempts.clear();
+    await db.settings.clear();
+  });
+  return null;
+}
+
 /** Fire-and-forget; safe to call after every session finish. */
 export function triggerSync(): void {
   void pushPending();
