@@ -2,7 +2,13 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../data/supabase';
 import { cloudEnabled } from '../lib/env';
-import { installSyncListeners, markAllUnsynced, syncBoth, triggerSync } from '../data/sync';
+import {
+  deleteAccountData,
+  installSyncListeners,
+  markAllUnsynced,
+  syncBoth,
+  triggerSync,
+} from '../data/sync';
 
 interface AuthContextValue {
   cloudEnabled: boolean;
@@ -18,6 +24,8 @@ interface AuthContextValue {
   /** Sign in with email + password — fully in-app, no email round-trip. */
   signInWithPassword: (email: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
+  /** Permanently delete the account + all data (cloud and local), then sign out. */
+  deleteAccount: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -106,6 +114,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Sign out only. Local play continues; a fresh anonymous identity is
         // created lazily if/when there's new data to sync.
         await supabase?.auth.signOut();
+      },
+      async deleteAccount() {
+        // Erase cloud + local data, then drop the session. A new anonymous
+        // identity is minted lazily only if the user plays again.
+        const err = await deleteAccountData();
+        if (err) return err;
+        await supabase?.auth.signOut();
+        return null;
       },
     }),
     [session, loading, user, isAnonymous],

@@ -136,7 +136,8 @@ export default function Analytics() {
   const sessions = useSessions() ?? [];
   const settings = useSettings();
   const start = useGameStore((s) => s.start);
-  const { cloudEnabled, user, isAnonymous, backUpToEmail, setPassword, signInWithPassword, signOut } = useAuth();
+  const { cloudEnabled, user, isAnonymous, backUpToEmail, setPassword, signInWithPassword, signOut, deleteAccount } =
+    useAuth();
 
   const [busy, setBusy] = useState(false);
   const [authMode, setAuthMode] = useState<'backup' | 'signin'>('backup');
@@ -145,6 +146,22 @@ export default function Analytics() {
   const [msg, setMsg] = useState<string | null>(null);
   const [newPwd, setNewPwd] = useState('');
   const [pwdMsg, setPwdMsg] = useState<string | null>(null);
+  const [delMsg, setDelMsg] = useState<string | null>(null);
+
+  const doDeleteAccount = async () => {
+    if (
+      !window.confirm(
+        'Delete your account and all history? This permanently erases your data from this device and the cloud, and cannot be undone.',
+      )
+    )
+      return;
+    setBusy(true);
+    setDelMsg(null);
+    const err = await deleteAccount();
+    setBusy(false);
+    // On success the auth state clears and this section unmounts on its own.
+    if (err) setDelMsg(err);
+  };
 
   // Only standard 120s classic runs are apples-to-apples with the population
   // benchmark, so progress/percentile/rank use those.
@@ -412,6 +429,28 @@ export default function Analytics() {
             </div>
             {pwdMsg && <p className="mt-2 text-sm text-gold">{pwdMsg}</p>}
           </div>
+        </Card>
+      )}
+
+      {/* Account deletion — required by the App Store for any app with accounts.
+          Shown whenever there's a signed-in identity (anonymous or email). */}
+      {cloudEnabled && user && (
+        <Card>
+          <Eyebrow>Delete account</Eyebrow>
+          <p className="mt-1 text-sm text-muted">
+            Permanently erase your account and all practice history from this device and the cloud. This can’t be
+            undone.
+          </p>
+          <div className="mt-3">
+            <button
+              onClick={doDeleteAccount}
+              disabled={busy}
+              className="rounded-full border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/20 active:scale-95 disabled:opacity-50"
+            >
+              Delete account
+            </button>
+          </div>
+          {delMsg && <p className="mt-2 text-sm text-red-300">{delMsg}</p>}
         </Card>
       )}
 
