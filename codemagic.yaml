@@ -1,0 +1,72 @@
+# Codemagic CI/CD — builds the Capacitor iOS app, signs it, and ships it to
+# TestFlight / App Store Connect. No Mac required on your side.
+#
+# ── One-time setup in the Codemagic web UI (codemagic.io) ────────────────────
+# 1. Connect this GitHub repo (yougijain/quickmaffs).
+# 2. Teams ▸ Integrations ▸ App Store Connect: add an App Store Connect API key
+#    (created at App Store Connect ▸ Users and Access ▸ Integrations ▸ Keys).
+#    Give the integration a name, then put that SAME name below under
+#    `integrations.app_store_connect`.
+# 3. In App Store Connect, create the app record for bundle id
+#    com.quickmaffs.app, then copy its numeric "Apple ID" into APP_ID below.
+# 4. Push to the branch and start a build (or enable automatic builds).
+#
+# Codemagic manages the signing certificate + provisioning profile automatically
+# from the `ios_signing` block below + the App Store Connect integration — you
+# never touch certificates by hand.
+#
+# Supabase keys are read from the committed .env.production at `npm run build`
+# time (publishable anon key only — safe to ship), so no secrets are needed here.
+
+workflows:
+  ios-appstore:
+    name: QuickMaffs iOS — App Store
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.quickmaffs.app
+      vars:
+        XCODE_WORKSPACE: "App.xcworkspace"
+        XCODE_SCHEME: "App"
+        # ▼ Replace with your app's numeric Apple ID from App Store Connect.
+        APP_ID: 0000000000
+      node: 20
+      xcode: 15.4
+      cocoapods: default
+    integrations:
+      # ▼ Must match the App Store Connect API key name you set in Codemagic.
+      app_store_connect: QuickMaffs ASC Key
+    scripts:
+      - name: Install npm dependencies
+        script: npm ci
+      - name: Build web assets (Vite) + sync Capacitor
+        script: |
+          npm run build
+          npx cap sync ios
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios/App && pod install
+      - name: Apply managed code signing to the Xcode project
+        script: xcode-project use-profiles
+      - name: Set build number to latest TestFlight + 1
+        script: |
+          cd "$CM_BUILD_DIR/ios/App"
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_ID" || echo 0)
+          agvtool new-version -all $(($LATEST + 1))
+      - name: Build signed IPA
+        script: |
+          cd "$CM_BUILD_DIR/ios/App"
+          xcode-project build-ipa --workspace "$XCODE_WORKSPACE" --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        # Uploads to TestFlight on every successful build. Flip submit_to_app_store
+        # to true (and add release config) once you're ready for a store review.
+        submit_to_testflight: true
+        # submit_to_app_store: false
