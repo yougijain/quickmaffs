@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2732 2732" width="2732" height="2732">
+  <defs>
+    <linearGradient id="mint" x1="512" y1="300" x2="512" y2="724" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6fe8b4"/>
+      <stop offset="1" stop-color="#3ddc97"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="1366" cy="1366" r="820" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3ddc97" stop-opacity="0.16"/>
+      <stop offset="0.6" stop-color="#3ddc97" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#3ddc97" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect x="0" y="0" width="2732" height="2732" fill="#080A09"/>
+  <rect x="0" y="0" width="2732" height="2732" fill="url(#glow)"/>
+
+  <!-- Same glyph as the app icon, scaled up and centered on the canvas. -->
+  <g transform="translate(1366 1366) scale(1.45) translate(-512 -530)">
+    <rect x="286" y="479" width="452" height="66" rx="33" fill="url(#mint)"/>
+    <line x1="398" y1="700" x2="628" y2="360" stroke="url(#mint)" stroke-width="74" stroke-linecap="round"/>
+  </g>
+</svg>

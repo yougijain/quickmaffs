@@ -1,0 +1,29 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+.env
+.env.*
+!.env.example
+!.env.production
+
+# Editor / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Capacitor / iOS build artifacts (the project scaffold IS committed)
+ios/App/Pods/
+ios/App/App/public/
+ios/App/build/
+ios/DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript incremental build cache (regenerated every build; churns constantly)
+*.tsbuildinfo
